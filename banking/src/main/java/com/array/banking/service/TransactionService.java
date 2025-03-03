@@ -50,6 +50,7 @@ public class TransactionService {
         // Update balances
         userService.updateUserBalance(sender, sender.getBalance().subtract(amount));
         userService.updateUserBalance(recipient, recipient.getBalance().add(amount));
+        
 
         // Create transaction records
         Transaction outgoing = new Transaction(sender, amount, TransactionType.TRANSFER_OUT);
