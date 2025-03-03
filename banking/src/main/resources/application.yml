@@ -1,0 +1,39 @@
+spring:
+  application:
+    name: banking
+  datasource:
+    # TODO: replace with real database credentials
+    url: jdbc:postgresql://localhost:5432/banking
+    username: postgres
+    password: password
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+jwt:
+  # TODO: Change this secret key to a secure one
+  secret: super_duper_secret_key_unhackable_very_secure_wow
+  expiration: 86400000  # 24 hours in milliseconds
+
+server:
+  port: 8080
+  servlet:
+    context-path:
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+  api-docs:
+    path: /v3/api-docs
+
+# Rate limiting configuration
+rate-limit:
+  capacity: 20
+  refill:
+    tokens: 20
+    duration: 1
