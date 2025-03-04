@@ -1,4 +1,3 @@
-
 -- Create users table
 CREATE TABLE users (
     user_id SERIAL PRIMARY KEY,
@@ -9,7 +8,7 @@ CREATE TABLE users (
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- Create transaction types enum
+-- TODO: Use ENUM type for transaction_type after getting ORM to work with it
 CREATE TYPE transaction_type AS ENUM ('deposit', 'withdrawal', 'transfer_in', 'transfer_out');
 
 -- Create transactions table
@@ -17,7 +16,7 @@ CREATE TABLE transactions (
     transaction_id SERIAL PRIMARY KEY,
     user_id INTEGER NOT NULL REFERENCES users(user_id),
     amount DECIMAL(12,2) NOT NULL,
-    type transaction_type NOT NULL,
+    transaction_type VARCHAR(20) NOT NULL,
     timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -32,7 +31,7 @@ DECLARE
     current_balance DECIMAL(12,2);
 BEGIN
     -- Only check for withdrawals and transfer_out types
-    IF NEW.type = 'withdrawal' OR NEW.type = 'transfer_out' THEN
+    IF NEW.transaction_type = 'withdrawal' OR NEW.transaction_type = 'transfer_out' THEN
         SELECT balance INTO current_balance FROM users WHERE user_id = NEW.user_id FOR UPDATE;
         
         IF current_balance < NEW.amount THEN
@@ -41,7 +40,7 @@ BEGIN
         
         -- Update the user's balance
         UPDATE users SET balance = balance - NEW.amount WHERE user_id = NEW.user_id;
-    ELSIF NEW.type = 'deposit' OR NEW.type = 'transfer_in' THEN
+    ELSIF NEW.transaction_type = 'deposit' OR NEW.transaction_type = 'transfer_in' THEN
         -- Handle deposits and incoming transfers
         UPDATE users SET balance = balance + NEW.amount WHERE user_id = NEW.user_id;
     END IF;
@@ -50,6 +49,11 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- Trigger to enforce transactional integrity
+CREATE TRIGGER ensure_transaction_integrity
+BEFORE INSERT ON transactions
+FOR EACH ROW
+EXECUTE FUNCTION process_withdrawal();
 
 -- Function to create a transfer between accounts
 CREATE OR REPLACE FUNCTION create_transfer(
@@ -69,11 +73,11 @@ BEGIN
     END IF;
     
     -- Create outgoing transaction
-    INSERT INTO transactions (user_id, amount, type, description)
+    INSERT INTO transactions (user_id, amount, transaction_type, description)
     VALUES (sender_id, transfer_amount, 'transfer_out', transfer_description);
     
     -- Create incoming transaction
-    INSERT INTO transactions (user_id, amount, type, description)
+    INSERT INTO transactions (user_id, amount, transaction_type, description)
     VALUES (recipient_id, transfer_amount, 'transfer_in', transfer_description);
     
     RETURN TRUE;

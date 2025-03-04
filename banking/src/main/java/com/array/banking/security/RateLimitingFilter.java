@@ -29,18 +29,8 @@ public class RateLimitingFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
         
-        // Skip rate limiting for Swagger documentation
-        String path = request.getRequestURI();
-        if (path.contains("/swagger-ui") || path.contains("/v3/api-docs") || 
-            path.contains("/banking/v1/login") || path.contains("/banking/v1/register")) {
-            filterChain.doFilter(request, response);
-            return;
-        }
-
-        // Get client IP address - in production, handle X-Forwarded-For for proxies
-        String clientIp = getClientIP(request);
-        
         // Get the bucket for this IP or create a new one
+        String clientIp = getClientIP(request);
         Bucket bucket = buckets.computeIfAbsent(clientIp, k -> bucketSupplier.get());
 
         // Try to consume 1 token

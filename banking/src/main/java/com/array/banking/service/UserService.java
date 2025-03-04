@@ -54,6 +54,11 @@ public class UserService implements UserDetailsService {
         return userRepository.existsByEmail(email);
     }
 
+    // Find a random user ID for generating random transfers
+    public User findRandomUser() {
+        return userRepository.findRandomUser().orElseThrow(() -> new IllegalStateException("No users found"));
+    }
+
     /**
      * Create a new user with the given credentials
      * Validates that the username and email are unique

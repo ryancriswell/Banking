@@ -4,7 +4,9 @@ import com.array.banking.model.Transaction;
 import com.array.banking.model.TransactionType;
 import com.array.banking.model.User;
 import com.array.banking.repository.TransactionRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -14,16 +16,11 @@ import java.math.BigDecimal;
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class TransactionService {
 
     private final TransactionRepository transactionRepository;
     private final UserService userService;
-
-    @Autowired
-    public TransactionService(TransactionRepository transactionRepository, UserService userService) {
-        this.transactionRepository = transactionRepository;
-        this.userService = userService;
-    }
 
     public List<Transaction> getUserTransactions(User user) {
         return transactionRepository.findByUser(user);
@@ -55,6 +52,7 @@ public class TransactionService {
         Transaction outgoing = new Transaction(sender, amount, TransactionType.TRANSFER_OUT);
         Transaction incoming = new Transaction(recipient, amount, TransactionType.TRANSFER_IN);
         
+        // Save transactions
         transactionRepository.save(outgoing);
         transactionRepository.save(incoming);
     }

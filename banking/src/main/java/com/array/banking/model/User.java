@@ -1,8 +1,8 @@
 package com.array.banking.model;
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -11,8 +11,8 @@ import java.util.List;
 
 @Entity
 @Table(name = "users")
-@Getter
-@Setter
+@Data
+@NoArgsConstructor
 public class User {
     
     @Id
@@ -38,10 +38,7 @@ public class User {
     // TODO: Should deleting a user really remove all their transactions?
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
     private List<Transaction> transactions = new ArrayList<>();
-    
-    // Default constructor
-    public User() {}
-    
+
     // Constructor with fields
     public User(String username, String passwordHash, String email) {
         this.username = username;

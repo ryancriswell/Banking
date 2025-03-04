@@ -6,6 +6,7 @@ import com.array.banking.security.RateLimitingFilter;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -34,12 +35,13 @@ public class SecurityConfig {
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 // Public endpoints
-                .requestMatchers("/banking/v1/login", "/banking/v1/register").permitAll()
+                .requestMatchers("/banking/v1/auth/*").permitAll()
                 // Swagger UI and OpenAPI endpoints
                 .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**", 
                                  "/webjars/**", "/swagger-ui/index.html").permitAll()
                 // H2 Console
                 .requestMatchers("/h2-console/**").permitAll()
+                .requestMatchers(HttpMethod.POST, "/error").permitAll()
                 .anyRequest().authenticated()
             );
         

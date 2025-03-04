@@ -1,5 +1,6 @@
 package com.array.banking.controller;
 
+import com.array.banking.dto.TransferRequest;
 import com.array.banking.model.Transaction;
 import com.array.banking.model.User;
 import com.array.banking.service.TransactionService;
@@ -11,22 +12,28 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
+import lombok.RequiredArgsConstructor;
 
 import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
+// TODO: responses return DTO
 @RestController
 @RequestMapping("/banking/v1")
+@Validated
+@RequiredArgsConstructor
 public class BankingController {
     
-    @Autowired
-    private UserService userService;
+    private final UserService userService;
     
-    @Autowired
-    private TransactionService transactionService;
+    private final TransactionService transactionService;
     
     /**
      * Get the authenticated user's current balance
@@ -45,8 +52,11 @@ public class BankingController {
      */
     @GetMapping("/transactions")
     public ResponseEntity<?> getTransactions(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
+            @RequestParam(defaultValue = "0") @Min(value = 0, message = "Page index must not be negative") int page,
+            @RequestParam(defaultValue = "10") @Min(value = 1, message = "Page size must not be less than one") int size) {
+        
+        // Cap the maximum page size to prevent potential resource issues
+        size = Math.min(size, 100);
         
         User user = getCurrentUser();
         Pageable pageable = PageRequest.of(page, size);
@@ -60,15 +70,15 @@ public class BankingController {
      * Ensures overdrafts are not allowed
      */
     @PostMapping("/transfer")
-    public ResponseEntity<?> transfer(@RequestBody Map<String, Object> transferRequest) {
+    public ResponseEntity<?> transfer(@Valid @RequestBody TransferRequest transferRequest) {
         try {
             User sender = getCurrentUser();
+            String recipientUsername = transferRequest.getRecipientUsername();
+            BigDecimal amount = transferRequest.getAmount();
             
-            String recipientUsername = (String) transferRequest.get("recipientUsername");
-            BigDecimal amount = new BigDecimal(transferRequest.get("amount").toString());
-            
-            if (amount.compareTo(BigDecimal.ZERO) <= 0) {
-                return ResponseEntity.badRequest().body("Transfer amount must be positive");
+            // Check for self-transfer
+            if (sender.getUsername().equals(recipientUsername)) {
+                return ResponseEntity.badRequest().body("Cannot transfer funds to yourself");
             }
             
             if (sender.getBalance().compareTo(amount) < 0) {

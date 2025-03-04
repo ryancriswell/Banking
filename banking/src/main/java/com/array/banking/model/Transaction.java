@@ -26,7 +26,7 @@ public class Transaction {
     private BigDecimal amount;
     
     @Enumerated(EnumType.STRING)
-    @Column(name = "type", nullable = false)
+    @Column(name = "transaction_type", nullable = false)
     private TransactionType type;
     
     @Column(name = "timestamp", nullable = false)

@@ -3,6 +3,8 @@ package com.array.banking.security;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -16,6 +18,7 @@ import java.util.Date;
 import java.util.Base64;
 
 @Component
+@RequiredArgsConstructor
 public class JwtTokenProvider {
 
     @Value("${jwt.secret}")
@@ -27,10 +30,6 @@ public class JwtTokenProvider {
     private final ApplicationContext context;
     
     private Key key;
-
-    public JwtTokenProvider(ApplicationContext context) {
-        this.context = context;
-    }
 
     @PostConstruct
     protected void init() {
