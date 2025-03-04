@@ -33,7 +33,7 @@ springdoc:
 
 # Rate limiting configuration
 rate-limit:
-  capacity: 20
+  capacity: 2000
   refill:
-    tokens: 20
+    tokens: 2000
     duration: 1
