@@ -11,3 +11,7 @@
 ## Libraries
 - React
 - Material UI
+
+## Limitations
+- I've yet to define a contract between frontend and backend request/response objects.
+- It could be a lot prettier, even for banking standards. I spent a lot of time today cleaning up and refactoring the backend for functionality and stability. 

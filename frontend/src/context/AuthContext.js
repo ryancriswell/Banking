@@ -27,7 +27,6 @@ export const AuthProvider = ({ children }) => {
     setError(null);
     try {
       const response = await api.post('/banking/v1/auth/login', { username, password });
-      console.log(response);
       const { token } = response.data;
       
       localStorage.setItem('token', token);

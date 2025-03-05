@@ -14,7 +14,6 @@ export const fetchTransactions = async (page = 0, size = 10) => {
     const response = await api.get(`/banking/v1/transactions`, {
       params: { page, size }
     });
-    console.log(response.data)
     return response.data;
   } catch (error) {
     throw error;
