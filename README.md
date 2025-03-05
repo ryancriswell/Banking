@@ -1,4 +1,4 @@
-# Array Banking Application
+# Banking Application
 
 WIP banking API built with Spring Boot.
 
