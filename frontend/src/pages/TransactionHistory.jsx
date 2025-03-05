@@ -6,6 +6,7 @@ import {
 } from '@mui/material';
 import { fetchTransactions } from '../services/bankingService';
 import ErrorAlert from '../components/ErrorAlert';
+import { formatTransaction, transactionStatusColor } from '../components/TransactionFormatter';
 
 const TransactionHistory = () => {
   const [transactions, setTransactions] = useState([]);
@@ -22,8 +23,8 @@ const TransactionHistory = () => {
       
       try {
         const response = await fetchTransactions(page, rowsPerPage);
-        setTransactions(response.transactions || []);
-        setTotalCount(response.totalCount || 0);
+        setTransactions(response.content || []);
+        setTotalCount(response.totalElements || 0);
       } catch (err) {
         setError(err.response?.data?.message || 'Failed to load transactions');
         console.error('Transaction load error:', err);
@@ -64,9 +65,10 @@ const TransactionHistory = () => {
             <TableHead>
               <TableRow>
                 <TableCell>Date</TableCell>
-                <TableCell>Description</TableCell>
+                <TableCell>Time</TableCell>
                 <TableCell>Type</TableCell>
                 <TableCell align="right">Amount</TableCell>
+                <TableCell align="right">Remaining Balance</TableCell>
                 <TableCell>Status</TableCell>
               </TableRow>
             </TableHead>
@@ -77,23 +79,25 @@ const TransactionHistory = () => {
                     <TableCell>
                       {new Date(transaction.timestamp).toLocaleDateString()}
                     </TableCell>
-                    <TableCell>{transaction.description || 'Transaction'}</TableCell>
                     <TableCell>
-                      {transaction.amount > 0 ? 'Credit' : 'Debit'}
+                      {new Date(transaction.timestamp).toLocaleTimeString()}
+                    </TableCell>
+                    <TableCell>
+                      {transaction.type}
                     </TableCell>
                     <TableCell align="right" sx={{ 
-                      color: transaction.amount > 0 ? 'success.main' : 'error.main',
+                      color: formatTransaction(transaction).color,
                       fontWeight: 'bold'
                     }}>
-                      {transaction.amount > 0 ? '+' : ''}{transaction.amount.toFixed(2)}
+                      {formatTransaction(transaction).currency}
+                    </TableCell>
+                    <TableCell align="right">
+                      {`$${transaction.balanceAfter.toFixed(2)}`}
                     </TableCell>
                     <TableCell>
                       <Chip 
-                        label={transaction.status || "Completed"} 
-                        color={
-                          transaction.status === 'Failed' ? 'error' : 
-                          transaction.status === 'Pending' ? 'warning' : 'success'
-                        }
+                        label={transaction.status} 
+                        color={transactionStatusColor(transaction.status)}
                         size="small"
                       />
                     </TableCell>

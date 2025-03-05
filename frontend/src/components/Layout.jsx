@@ -15,7 +15,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 
 const Layout = () => {
-  const { logout, user } = useAuth();
+  const { logout, username } = useAuth();
   const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -90,7 +90,7 @@ const Layout = () => {
             Banking App
           </Typography>
           <Typography variant="body2">
-            {user && `Welcome, ${user.username}`}
+            {username && `Welcome, ${username}`}
           </Typography>
         </Toolbar>
       </AppBar>

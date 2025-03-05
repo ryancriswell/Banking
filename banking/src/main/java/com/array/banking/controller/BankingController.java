@@ -1,11 +1,12 @@
 package com.array.banking.controller;
 
+import com.array.banking.dto.BalanceResponse;
 import com.array.banking.dto.TransferRequest;
+import com.array.banking.dto.TransferResponse;
 import com.array.banking.model.Transaction;
 import com.array.banking.model.User;
 import com.array.banking.service.TransactionService;
 import com.array.banking.service.UserService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -20,11 +21,8 @@ import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 
 import java.math.BigDecimal;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Optional;
 
-// TODO: responses return DTO
 @RestController
 @RequestMapping("/banking/v1")
 @Validated
@@ -39,11 +37,9 @@ public class BankingController {
      * Get the authenticated user's current balance
      */
     @GetMapping("/balance")
-    public ResponseEntity<?> getBalance() {
+    public ResponseEntity<BalanceResponse> getBalance() {
         User user = getCurrentUser();
-        Map<String, Object> response = new HashMap<>();
-        response.put("username", user.getUsername());
-        response.put("balance", user.getBalance());
+        BalanceResponse response = new BalanceResponse(user.getUsername(), user.getBalance());
         return ResponseEntity.ok(response);
     }
     
@@ -51,7 +47,7 @@ public class BankingController {
      * Get paginated list of transactions for the authenticated user
      */
     @GetMapping("/transactions")
-    public ResponseEntity<?> getTransactions(
+    public ResponseEntity<Page<Transaction>> getTransactions(
             @RequestParam(defaultValue = "0") @Min(value = 0, message = "Page index must not be negative") int page,
             @RequestParam(defaultValue = "10") @Min(value = 1, message = "Page size must not be less than one") int size) {
         
@@ -91,11 +87,13 @@ public class BankingController {
             }
             
             User recipient = recipientOpt.get();
-            transactionService.transfer(sender, recipient, amount);
+            Integer transactionId = transactionService.transfer(sender, recipient, amount);
             
-            Map<String, Object> response = new HashMap<>();
-            response.put("message", "Transfer successful");
-            response.put("newBalance", sender.getBalance());
+            TransferResponse response = new TransferResponse(
+                "Transfer successful",
+                sender.getBalance(),
+                transactionId
+            );
             
             return ResponseEntity.ok(response);
         } catch (Exception e) {

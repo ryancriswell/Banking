@@ -7,7 +7,7 @@ const AuthContext = createContext();
 export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
+  const [username, setUsername] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -15,10 +15,9 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
+      // TODO: Verify the token here
       setAuthToken(token);
-      // In a real app, you'd verify the token here
-      const userData = JSON.parse(localStorage.getItem('user') || '{}');
-      setUser(userData);
+      setUsername(localStorage.getItem('username'));
       setIsAuthenticated(true);
     }
     setLoading(false);
@@ -28,12 +27,13 @@ export const AuthProvider = ({ children }) => {
     setError(null);
     try {
       const response = await api.post('/banking/v1/auth/login', { username, password });
-      const { token, user } = response.data; // Adjust based on your API response
+      console.log(response);
+      const { token } = response.data;
       
       localStorage.setItem('token', token);
-      localStorage.setItem('user', JSON.stringify(user));
+      localStorage.setItem('username', username);
       setAuthToken(token);
-      setUser(user);
+      setUsername(username);
       setIsAuthenticated(true);
       return true;
     } catch (err) {
@@ -43,10 +43,11 @@ export const AuthProvider = ({ children }) => {
   };
 
   const register = async (username, password, email) => {
+    // TODO: automatically login after registration?
     setError(null);
     try {
       // TODO: handle registration errors
-      const response = await api.post('/banking/v1/auth/register', { 
+      await api.post('/banking/v1/auth/register', { 
         username, 
         password,
         email 
@@ -60,15 +61,15 @@ export const AuthProvider = ({ children }) => {
 
   const logout = () => {
     localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    localStorage.removeItem('username');
     clearAuthToken();
-    setUser(null);
+    setUsername(null);
     setIsAuthenticated(false);
   };
 
   return (
     <AuthContext.Provider value={{ 
-      user, 
+      username, 
       isAuthenticated, 
       loading, 
       error,

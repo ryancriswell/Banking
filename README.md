@@ -2,12 +2,23 @@
 
 WIP banking API built with Spring Boot.
 
+## Technologies
+
+- **Spring Boot**: Core framework
+- **Spring Security**: Authentication and authorization
+- **Spring Data JPA**: Database access
+- **Hibernate**: Database ORM
+- **PostgreSQL**: Database
+- **JJWT**: JWT auth implementation
+- **Bucket4j**: Rate limiting
+- **Lombok**: Boilerplate code reduction
+- **JUnit/Mockito**: Testing Framework
+
 ## Choices
-PostgreSQL over MSSQL: I haven't used MSSQL before, so I went PostgreSQL for familiarity.
 Java Spring Boot: Comfortable with the framework, good support for everything required such as
 - Hibernate (ORM)
 - Spring Security / JJWT for "simple" auth
-- Testing via JUnit + Mockito (I ran out of time to write a test suite, but that the idea) 
+- Testing via JUnit + Mockito
 
 ## Features
 
@@ -18,7 +29,7 @@ Java Spring Boot: Comfortable with the framework, good support for everything re
 
 - **Transaction Processing**
   - View transaction history
-  - Random transaction generation for demo purposes
+  - Random transaction generation
   - Paginated transaction results
 
 - **Funds Transfer**
@@ -30,12 +41,8 @@ Java Spring Boot: Comfortable with the framework, good support for everything re
   - JWT-based authentication
   - IP-based rate limiting
   - Password encryption
-  - SQL injection protection
 
-## Architecture
-
-The application follows a standard layered architecture:
-
+## Folder Architecture
 ```
 com.array.banking
 ├── config/           # Application configuration classes
@@ -79,6 +86,9 @@ Database transactions and triggers act as a second layer of protection for preve
   - http://localhost:8080/swagger-ui/index.html#
 4. Register some users -> login -> interact with banking-controller endpoints
 
+### Run Tests
+  - `cd banking`
+  - `./mvnw test`
 
 ### Direct API Usage Example
 
@@ -101,17 +111,3 @@ Database transactions and triggers act as a second layer of protection for preve
    curl -X GET http://localhost:8080/banking/v1/balance \
    -H "Authorization: Bearer YOUR_JWT_TOKEN"
    ```
-
-## Technologies
-
-- **Spring Boot**: Core framework
-- **Spring Security**: Authentication and authorization
-- **Spring Data JPA**: Database access
-- **PostgreSQL**: Database
-- **JJWT**: JWT implementation
-- **Bucket4j**: Rate limiting
-- **Lombok**: Boilerplate code reduction
-
-## License
-
-This project is licensed under the MIT License.

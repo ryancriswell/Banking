@@ -24,16 +24,16 @@ const Transfer = () => {
   });
   const [transferResult, setTransferResult] = useState(null);
 
+  const loadBalance = async () => {
+    try {
+      const response = await fetchBalance();
+      setBalance(response.balance);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to load balance');
+    }
+  };
+  
   useEffect(() => {
-    const loadBalance = async () => {
-      try {
-        const response = await fetchBalance();
-        setBalance(response.balance);
-      } catch (err) {
-        setError(err.response?.data?.message || 'Failed to load balance');
-      }
-    };
-
     loadBalance();
   }, []);
 
@@ -107,6 +107,7 @@ const Transfer = () => {
       const amount = parseFloat(formData.amount);
       const result = await transferFunds(formData.recipientUsername, amount);
       setTransferResult(result);
+      loadBalance(); // Refresh balance after transfer
       setActiveStep(2); // Move to completion step
     } catch (err) {
       setError(err.response?.data?.message || 'Transfer failed');

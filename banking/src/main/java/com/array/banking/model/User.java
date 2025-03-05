@@ -6,8 +6,6 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
 @Entity
 @Table(name = "users")
@@ -34,10 +32,6 @@ public class User {
     
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
-    
-    // TODO: Should deleting a user really remove all their transactions?
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
-    private List<Transaction> transactions = new ArrayList<>();
 
     // Constructor with fields
     public User(String username, String passwordHash, String email) {

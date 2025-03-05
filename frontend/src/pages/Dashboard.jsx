@@ -1,18 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Typography, Card, CardContent, Grid, Box,
-  Paper, Button, CircularProgress, useTheme 
+  Paper, Button, CircularProgress 
 } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
 import { fetchBalance, fetchTransactions } from '../services/bankingService';
 import ErrorAlert from '../components/ErrorAlert';
+import { formatTransaction, transactionBorderColor } from '../components/TransactionFormatter';
 
 const Dashboard = () => {
   const [balance, setBalance] = useState(null);
   const [recentTransactions, setRecentTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const theme = useTheme();
 
   useEffect(() => {
     const loadData = async () => {
@@ -25,7 +25,8 @@ const Dashboard = () => {
         const transactionsData = await fetchTransactions(0, 5); // Get only 5 recent transactions
         
         setBalance(balanceData.balance);
-        setRecentTransactions(transactionsData.transactions || []);
+        setRecentTransactions(transactionsData.content || []);
+        // TODO: type for transactions response object
       } catch (err) {
         setError(err.response?.data?.message || 'Failed to load dashboard data');
         console.error('Dashboard error:', err);
@@ -94,15 +95,13 @@ const Dashboard = () => {
                         p: 1, 
                         mb: 1,
                         borderLeft: '4px solid',
-                        borderColor: transaction.amount > 0 ? 
-                          theme.palette.success.main : 
-                          theme.palette.error.main
+                        borderColor: transactionBorderColor(transaction.status),
                       }}
                     >
                       <Grid container justifyContent="space-between" alignItems="center">
                         <Grid item>
                           <Typography variant="body2">
-                            {transaction.description || 
+                            {transaction.type || 
                               (transaction.amount > 0 ? 'Received' : 'Sent')}
                           </Typography>
                           <Typography variant="caption" color="textSecondary">
@@ -112,9 +111,9 @@ const Dashboard = () => {
                         <Grid item>
                           <Typography 
                             variant="body1" 
-                            color={transaction.amount > 0 ? 'success.main' : 'error.main'}
+                            color={formatTransaction(transaction).color}
                           >
-                            {transaction.amount > 0 ? '+' : ''}{transaction.amount.toFixed(2)}
+                            {formatTransaction(transaction).currency}
                           </Typography>
                         </Grid>
                       </Grid>

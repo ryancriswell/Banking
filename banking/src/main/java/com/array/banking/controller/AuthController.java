@@ -1,7 +1,9 @@
 package com.array.banking.controller;
 
 import com.array.banking.dto.LoginRequest;
+import com.array.banking.dto.LoginResponse;
 import com.array.banking.dto.RegisterRequest;
+import com.array.banking.dto.RegisterResponse;
 import com.array.banking.model.User;
 import com.array.banking.security.JwtTokenProvider;
 import com.array.banking.service.RandomTransactionService;
@@ -20,8 +22,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.validation.Valid;
-import java.util.HashMap;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/banking/v1/auth")
@@ -35,7 +35,6 @@ public class AuthController {
     private final UserService userService;
     private final RandomTransactionService randomTransactionService;
 
-    // TODO: response returns DTO
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest loginRequest) {
         String username = loginRequest.getUsername();
@@ -47,9 +46,7 @@ public class AuthController {
         String token = jwtTokenProvider.createToken(username);
         
         // Create response
-        Map<String, Object> response = new HashMap<>();
-        response.put("token", token);
-        response.put("username", username);
+        LoginResponse response = new LoginResponse(token, username);
         
         try {
             // Simulate random transactions for the user on login
@@ -62,19 +59,19 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
-    // TODO: response returns DTO
     @PostMapping("/register")
-    public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest registerRequest) {
+    public ResponseEntity<RegisterResponse> register(@Valid @RequestBody RegisterRequest registerRequest) {
         String username = registerRequest.getUsername();
         String password = registerRequest.getPassword();
         String email = registerRequest.getEmail();
         
         User user = userService.createUser(username, password, email);
         
-        Map<String, Object> response = new HashMap<>();
-        response.put("userId", user.getUserId());
-        response.put("username", user.getUsername());
-        response.put("email", user.getEmail());
+        RegisterResponse response = new RegisterResponse(
+            user.getUserId(),
+            user.getUsername(),
+            user.getEmail()
+        );
         
         return ResponseEntity.ok(response);
     }

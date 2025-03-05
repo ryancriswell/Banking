@@ -2,6 +2,7 @@ package com.array.banking.model;
 
 import jakarta.persistence.*;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.math.BigDecimal;
@@ -11,6 +12,7 @@ import java.time.LocalDateTime;
 @Table(name = "transactions")
 @Getter
 @Setter
+@NoArgsConstructor
 public class Transaction {
     
     @Id
@@ -32,14 +34,25 @@ public class Transaction {
     @Column(name = "timestamp", nullable = false)
     private LocalDateTime timestamp = LocalDateTime.now();
     
-    // Default constructor
-    public Transaction() {}
+    @Column(name = "balance_after", nullable = false)
+    private BigDecimal balanceAfter;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
+    private TransactionStatus status = TransactionStatus.PENDING;
     
-    // Constructor with fields
-    public Transaction(User user, BigDecimal amount, TransactionType type) {
+    public Transaction(User user, BigDecimal amount, TransactionType type, BigDecimal balanceAfter) {
         this.user = user;
         this.amount = amount;
         this.type = type;
+        this.balanceAfter = balanceAfter;
     }
 
+    public Transaction(User user, BigDecimal amount, TransactionType type, BigDecimal balanceAfter, TransactionStatus status) {
+        this.user = user;
+        this.amount = amount;
+        this.type = type;
+        this.balanceAfter = balanceAfter;
+        this.status = status;
+    }
 }
