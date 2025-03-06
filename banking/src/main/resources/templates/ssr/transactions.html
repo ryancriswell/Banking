@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transaction History - Array Banking</title>
+    <script src="/webjars/htmx.org/1.9.10/dist/htmx.min.js"></script>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f7f9;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 0;
+            border-bottom: 1px solid #e2e8f0;
+            margin-bottom: 2rem;
+        }
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #2d3748;
+        }
+        .nav-links {
+            display: flex;
+        }
+        .nav-links a {
+            margin-left: 1.5rem;
+            color: #4a5568;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .nav-links a:hover {
+            color: #4299e1;
+        }
+        .card {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .page-title {
+            font-size: 1.5rem;
+            color: #2d3748;
+            margin-bottom: 1.5rem;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th {
+            text-align: left;
+            padding: 0.75rem;
+            color: #4a5568;
+            border-bottom: 2px solid #e2e8f0;
+        }
+        td {
+            padding: 0.75rem;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .amount {
+            font-weight: 500;
+        }
+        .deposit {
+            color: #38a169;
+        }
+        .withdrawal {
+            color: #e53e3e;
+        }
+        .transfer-in {
+            color: #38a169;
+        }
+        .transfer-out {
+            color: #e53e3e;
+        }
+        .pagination {
+            display: flex;
+            justify-content: center;
+            margin-top: 1.5rem;
+        }
+        .pagination a {
+            margin: 0 0.25rem;
+            padding: 0.5rem 0.75rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+            color: #4a5568;
+            text-decoration: none;
+        }
+        .pagination a:hover {
+            background-color: #f7fafc;
+        }
+        .pagination .active {
+            background-color: #4299e1;
+            color: white;
+            border: 1px solid #4299e1;
+        }
+        .pagination .disabled {
+            color: #cbd5e0;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">Array Banking</div>
+            <div class="nav-links">
+                <a th:href="@{/ssr/dashboard}">Dashboard</a>
+                <a th:href="@{/ssr/transactions}">Transactions</a>
+                <a th:href="@{/ssr/transfer}">Transfer</a>
+                <a th:href="@{/ssr/logout}">Logout</a>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="page-title">Transaction History</div>
+            
+            <div id="transaction-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Type</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                            <th>Balance After</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:if="${transactions.isEmpty()}">
+                            <td colspan="5">No transactions found.</td>
+                        </tr>
+                        <tr th:each="transaction : ${transactions}">
+                            <td th:text="${#temporals.format(transaction.timestamp, 'MMM dd, yyyy HH:mm')}">Jan 01, 2023</td>
+                            <td th:text="${transaction.type}">DEPOSIT</td>
+                            <td th:class="'amount ' + ${transaction.type.toString().toLowerCase().replace('_', '-')}">
+                                <span th:text="${'$' + #numbers.formatDecimal(transaction.amount, 1, 2, 'POINT')}">$0.00</span>
+                            </td>
+                            <td th:text="${transaction.status}">COMPLETED</td>
+                            <td th:text="${'$' + #numbers.formatDecimal(transaction.balanceAfter, 1, 2, 'POINT')}">$0.00</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <!-- Pagination - using standard links first -->
+                <div class="pagination" th:if="${totalPages > 0}">
+                    <!-- First page -->
+                    <a th:class="${currentPage == 0 ? 'disabled' : ''}"
+                       th:href="${currentPage == 0 ? '#' : '/ssr/transactions?page=0&size=' + transactions.size}"
+                       th:data-page="0"
+                       class="page-link">&laquo;</a>
+                       
+                    <!-- Previous page -->
+                    <a th:class="${currentPage == 0 ? 'disabled' : ''}"
+                       th:href="${currentPage == 0 ? '#' : '/ssr/transactions?page=' + (currentPage - 1) + '&size=' + transactions.size}"
+                       th:data-page="${currentPage - 1}"
+                       class="page-link">&lt;</a>
+                       
+                    <!-- Page numbers -->
+                    <span th:each="i: ${#numbers.sequence(0, totalPages - 1)}">
+                        <a th:if="${i >= currentPage - 2 && i <= currentPage + 2}"
+                           th:class="${currentPage == i ? 'active' : ''}"
+                           th:href="${'/ssr/transactions?page=' + i + '&size=' + transactions.size}"
+                           th:data-page="${i}"
+                           class="page-link"
+                           th:text="${i + 1}">1</a>
+                    </span>
+                    
+                    <!-- Next page -->
+                    <a th:class="${currentPage + 1 >= totalPages ? 'disabled' : ''}"
+                       th:href="${currentPage + 1 >= totalPages ? '#' : '/ssr/transactions?page=' + (currentPage + 1) + '&size=' + transactions.size}"
+                       th:data-page="${currentPage + 1}"
+                       class="page-link">&gt;</a>
+                       
+                    <!-- Last page -->
+                    <a th:class="${currentPage + 1 >= totalPages ? 'disabled' : ''}"
+                       th:href="${currentPage + 1 >= totalPages ? '#' : '/ssr/transactions?page=' + (totalPages - 1) + '&size=' + transactions.size}"
+                       th:data-page="${totalPages - 1}"
+                       class="page-link">&raquo;</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script th:inline="javascript">
+    document.addEventListener('DOMContentLoaded', function() {
+        // Get pagination info from Thymeleaf
+        const currentPage = [[${currentPage}]];
+        const totalPages = [[${totalPages}]];
+        const pageSize = [[${transactions.size}]];
+        
+        // Set up HTMX attributes for pagination links
+        document.querySelectorAll('.page-link').forEach(link => {
+            if (!link.classList.contains('disabled')) {
+                const page = link.getAttribute('data-page');
+                link.setAttribute('hx-get', `/ssr/transactions?page=${page}&size=${pageSize}`);
+                link.setAttribute('hx-target', '#transaction-container');
+                link.setAttribute('hx-swap', 'innerHTML');
+                console.log(`Set up HTMX for page ${page}`);
+            }
+        });
+    });
+    </script>
+</body>
+</html>

@@ -29,6 +29,16 @@ public class RateLimitingFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
         
+        // Skip rate limiting for static resources
+        String requestURI = request.getRequestURI();
+        if (requestURI.contains(".") || 
+            requestURI.startsWith("/webjars") || 
+            requestURI.startsWith("/css") || 
+            requestURI.startsWith("/js")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+        
         // Get the bucket for this IP or create a new one
         String clientIp = getClientIP(request);
         Bucket bucket = buckets.computeIfAbsent(clientIp, k -> bucketSupplier.get());

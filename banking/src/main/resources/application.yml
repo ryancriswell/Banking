@@ -12,6 +12,7 @@ jwt:
   # TODO: Change this secret key to a secure one
   secret: super_duper_secret_key_unhackable_very_secure_wow
   expiration: 86400000  # 24 hours in milliseconds
+  cookie-name: jwt_token
 
 server:
   port: 8080
@@ -30,3 +31,6 @@ rate-limit:
   refill:
     tokens: 2000
     duration: 1
+
+react-app:
+  url: http://localhost:3000

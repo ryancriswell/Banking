@@ -1,0 +1,76 @@
+<table>
+    <thead>
+        <tr>
+            <th>Date</th>
+            <th>Type</th>
+            <th>Amount</th>
+            <th>Status</th>
+            <th>Balance After</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr th:if="${transactions.isEmpty()}">
+            <td colspan="5">No transactions found.</td>
+        </tr>
+        <tr th:each="transaction : ${transactions}">
+            <td th:text="${#temporals.format(transaction.timestamp, 'MMM dd, yyyy HH:mm')}">Jan 01, 2023</td>
+            <td th:text="${transaction.type}">DEPOSIT</td>
+            <td th:class="'amount ' + ${transaction.type.toString().toLowerCase().replace('_', '-')}">
+                <span th:text="${'$' + #numbers.formatDecimal(transaction.amount, 1, 2, 'POINT')}">$0.00</span>
+            </td>
+            <td th:text="${transaction.status}">COMPLETED</td>
+            <td th:text="${'$' + #numbers.formatDecimal(transaction.balanceAfter, 1, 2, 'POINT')}">$0.00</td>
+        </tr>
+    </tbody>
+</table>
+
+<!-- Pagination using the same approach -->
+<div class="pagination" th:if="${totalPages > 0}">
+    <a th:class="${currentPage == 0 ? 'disabled' : ''}"
+       th:href="${currentPage == 0 ? '#' : '/ssr/transactions?page=0&size=' + transactions.size}"
+       th:data-page="0"
+       class="page-link">&laquo;</a>
+       
+    <a th:class="${currentPage == 0 ? 'disabled' : ''}"
+       th:href="${currentPage == 0 ? '#' : '/ssr/transactions?page=' + (currentPage - 1) + '&size=' + transactions.size}"
+       th:data-page="${currentPage - 1}"
+       class="page-link">&lt;</a>
+       
+    <span th:each="i: ${#numbers.sequence(0, totalPages - 1)}">
+        <a th:if="${i >= currentPage - 2 && i <= currentPage + 2}"
+           th:class="${currentPage == i ? 'active' : ''}"
+           th:href="${'/ssr/transactions?page=' + i + '&size=' + transactions.size}"
+           th:data-page="${i}"
+           class="page-link"
+           th:text="${i + 1}">1</a>
+    </span>
+    
+    <a th:class="${currentPage + 1 >= totalPages ? 'disabled' : ''}"
+       th:href="${currentPage + 1 >= totalPages ? '#' : '/ssr/transactions?page=' + (currentPage + 1) + '&size=' + transactions.size}"
+       th:data-page="${currentPage + 1}"
+       class="page-link">&gt;</a>
+       
+    <a th:class="${currentPage + 1 >= totalPages ? 'disabled' : ''}"
+       th:href="${currentPage + 1 >= totalPages ? '#' : '/ssr/transactions?page=' + (totalPages - 1) + '&size=' + transactions.size}"
+       th:data-page="${totalPages - 1}"
+       class="page-link">&raquo;</a>
+</div>
+
+<script th:inline="javascript">
+document.addEventListener('DOMContentLoaded', function() {
+    // Get pagination info from Thymeleaf
+    const currentPage = [[${currentPage}]];
+    const totalPages = [[${totalPages}]];
+    const pageSize = [[${transactions.size}]];
+    
+    // Set up HTMX attributes for pagination links
+    document.querySelectorAll('.page-link').forEach(link => {
+        if (!link.classList.contains('disabled')) {
+            const page = link.getAttribute('data-page');
+            link.setAttribute('hx-get', `/ssr/transactions?page=${page}&size=${pageSize}`);
+            link.setAttribute('hx-target', '#transaction-container');
+            link.setAttribute('hx-swap', 'innerHTML');
+        }
+    });
+});
+</script>

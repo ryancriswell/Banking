@@ -1,0 +1,5 @@
+<div class="balance-info" id="balance-section">
+    <div class="balance-label">Available Balance</div>
+    <div class="balance-amount" th:text="${'$' + #numbers.formatDecimal(balance, 1, 2, 'POINT')}">$0.00</div>
+    <div th:if="${successMessage}" class="success-message" th:text="${successMessage}"></div>
+</div>
