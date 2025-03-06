@@ -14,7 +14,7 @@ If both versions are running, you can switch between the two by changing the pat
 
 ### SSR
 - SSR urls start with http://localhost:8080/ssr.
-- Started from /banking (detailed start up instructions are in `/frontend/README.md`)
+- Started from /banking (detailed start up instructions are in `/banking/README.md`)
 - SSR templates can be found in `/banking/src/main/resources/templates/ssr`
 
 ### SPA:
