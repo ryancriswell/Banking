@@ -40,7 +40,7 @@ const Layout = () => {
     <>
       <Toolbar>
         <Typography variant="h6" noWrap component="div">
-          Banking App
+          Array Banking
         </Typography>
       </Toolbar>
       <Divider />
@@ -87,7 +87,7 @@ const Layout = () => {
             </IconButton>
           )}
           <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
-            Banking App
+            Array Banking
           </Typography>
           <Typography variant="body2">
             {username && `Welcome, ${username}`}
