@@ -1,6 +1,7 @@
 # Banking Application
 
-WIP banking API built with Spring Boot.
+SSR frontend information found in `/banking/README.md`
+SPA frontend information found in `/frontend/README.md`
 
 ## Technologies
 
@@ -13,6 +14,7 @@ WIP banking API built with Spring Boot.
 - **Bucket4j**: Rate limiting
 - **Lombok**: Boilerplate code reduction
 - **JUnit/Mockito**: Testing Framework
+- **HTMX/Thymeleaf**: HTML template-based, server-rendered frontend
 
 ## Choices
 Java Spring Boot: Comfortable with the framework, good support for everything required such as
