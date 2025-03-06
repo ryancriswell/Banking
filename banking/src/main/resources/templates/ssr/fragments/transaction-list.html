@@ -24,7 +24,6 @@
     </tbody>
 </table>
 
-<!-- Pagination using the same approach -->
 <div class="pagination" th:if="${totalPages > 0}">
     <a th:class="${currentPage == 0 ? 'disabled' : ''}"
        th:href="${currentPage == 0 ? '#' : '/ssr/transactions?page=0&size=' + transactions.size}"
