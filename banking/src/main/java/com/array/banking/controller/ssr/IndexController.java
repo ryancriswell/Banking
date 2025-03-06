@@ -1,4 +1,4 @@
-package com.array.banking.controller;
+package com.array.banking.controller.ssr;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
