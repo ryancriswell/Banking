@@ -1,6 +1,7 @@
 services:
-  postgres:
+  database:
     image: postgres:15
+    container_name: database
     ports:
       - "5432:5432"
     environment:
@@ -10,6 +11,37 @@ services:
     volumes:
       - postgres-data:/var/lib/postgresql/data
       - ./schema.sql:/docker-entrypoint-initdb.d/schema.sql
+    # TODO: validate this healthcheck
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d banking"]
+      interval: 10s
+      retries: 5
+      start_period: 30s
+      timeout: 10s
+
+  app:
+    container_name: app
+    build:
+      context: ./banking
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    depends_on:
+      database:
+        condition: service_healthy
+    environment:
+      # TODO: pull this into the application.yml so it can be used in the application without duplicating
+      SPRING_DATASOURCE_URL: jdbc:postgresql://database:5432/banking
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: password
+  
+  # frontend:
+  #   container_name: frontend
+  #   build:
+  #     context: ./frontend
+  #     dockerfile: Dockerfile
+  #   depends_on:
+  #     - app
 
 volumes:
   postgres-data:

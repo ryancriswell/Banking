@@ -2,7 +2,6 @@ spring:
   application:
     name: banking
   datasource:
-    # TODO: replace with real database credentials
     url: jdbc:postgresql://localhost:5432/banking
     username: postgres
     password: password
@@ -33,4 +32,5 @@ rate-limit:
     duration: 1
 
 react-app:
-  url: http://localhost:3000
+  # TODO: pull service name from environment variable
+  url: http://frontend:3000
