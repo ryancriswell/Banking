@@ -13,8 +13,9 @@ function App() {
   const { isAuthenticated } = useAuth();
 
   return (
-    <Routes>
+    <Routes>    
       {/* Root landing page to choose between SPA and SSR */}
+      <Route path="/" element={<LandingPage />} />
       <Route path="/landing" element={<LandingPage />} />
 
       {/* SPA Routes */}
@@ -37,8 +38,6 @@ function App() {
         />
       </Route>
       
-      {/* Default redirect for SPA */}
-      <Route path="/" element={<Navigate to={isAuthenticated ? "/dashboard" : "/login"} />} />
     </Routes>
   );
 }

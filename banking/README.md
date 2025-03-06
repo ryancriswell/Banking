@@ -21,7 +21,11 @@ If both versions are running, you can switch between the two by changing the pat
 - SPA urls start with http://localhost:3000/spa.
 - Started from /frontend (detailed start up instructions are in `/frontend/README.md`)
 
-### Viable Paths (Shared):
+### Viable Paths 
+SPA Only (http://localhost:3000):
+- /spa or /spa/landing will lead to a landing page allowing a selection between the two versions
+
+Shared:
 - /login
 - /register
 - /dashboard
