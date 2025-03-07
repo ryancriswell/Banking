@@ -47,6 +47,11 @@ management:
     distribution:
       percentiles-histogram:
         http.server.requests: true
+  tracing:
+    sampling:
+      probability: 1.0
+    otlp:
+      endpoint: http://opentelemetry-collector:4317
 
 logging:
   pattern:
