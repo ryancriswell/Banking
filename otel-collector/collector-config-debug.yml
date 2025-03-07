@@ -1,0 +1,58 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  batch:
+  resource:
+    attributes:
+      - key: container
+        value: app
+        action: upsert
+
+exporters:
+  debug:
+    verbosity: detailed
+
+  otlp/tempo:
+    endpoint: ${TEMPO_ENDPOINT}
+    tls:
+      insecure: true
+
+  prometheusremotewrite:
+    endpoint: ${PROM_ENDPOINT}
+
+  loki:
+    endpoint: http://loki:3100/loki/api/v1/push
+    default_labels_enabled:
+      exporter: true
+      job: true
+
+  logging:
+    verbosity: detailed
+    sampling_initial: 1
+    sampling_thereafter: 1
+
+service:
+  telemetry:
+    logs:
+      level: debug
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch, resource]
+      exporters: [otlp/tempo, logging]
+
+    metrics:
+      receivers: [otlp]
+      processors: [batch, resource]
+      exporters: [prometheusremotewrite, logging]
+
+    logs:
+      receivers: [otlp]
+      processors: [batch, resource]
+      exporters: [loki, logging, debug]

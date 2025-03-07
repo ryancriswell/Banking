@@ -34,3 +34,20 @@ rate-limit:
 react-app:
   # TODO: pull service name from environment variable
   url: http://frontend:3000
+
+# Actuator and Metrics configuration
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  metrics:
+    tags:
+      application: ${spring.application.name}
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+
+logging:
+  pattern:
+    level: "%5p [${spring.application.name:},%X{traceId:-},%X{spanId:-}]"

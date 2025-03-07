@@ -7,6 +7,7 @@ import com.array.banking.security.SsrJwtCookieFilter;
 
 import java.util.Arrays;
 
+import org.springframework.boot.actuate.autoconfigure.security.servlet.EndpointRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -41,6 +42,8 @@ public class SecurityConfig {
           .formLogin(form -> form.disable())
           .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
           .authorizeHttpRequests(auth -> auth
+              // Actuator endpoints - add this line to permit all actuator endpoints
+              .requestMatchers(EndpointRequest.toAnyEndpoint()).permitAll()
               // Public endpoints
               .requestMatchers("/banking/v1/auth/**").permitAll()
               // SSR public endpoints
@@ -57,6 +60,8 @@ public class SecurityConfig {
               .permitAll()
               // H2 Console
               .requestMatchers("/h2-console/**").permitAll()
+              // Allow direct access to all actuator endpoints
+              .requestMatchers("/actuator/**").permitAll()
               .anyRequest().authenticated());
 
       // Add JWT cookie authentication filter first for SSR pages (before rate limiting)

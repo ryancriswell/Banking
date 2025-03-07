@@ -11,13 +11,32 @@ services:
     volumes:
       - postgres-data:/var/lib/postgresql/data
       - ./schema.sql:/docker-entrypoint-initdb.d/schema.sql
-    # TODO: validate this healthcheck
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d banking"]
       interval: 10s
       retries: 5
       start_period: 30s
       timeout: 10s
+    networks:
+      - banking-network
+
+  opentelemetry-collector:
+    build:
+      context: ./otel-collector
+      dockerfile: Dockerfile
+    container_name: otel-collector
+    ports:
+      - "4317:4317"   # OTLP gRPC receiver
+      - "4318:4318"   # OTLP HTTP receiver
+    environment:
+      DEPLOY_ENV: local
+      TEMPO_ENDPOINT: tempo:4317
+      PROM_ENDPOINT: http://prometheus:9090/api/v1/write
+      LOKI_ENDPOINT: http://loki:3100/loki/api/v1/push
+    depends_on:
+      - loki
+    networks:
+      - banking-network
 
   app:
     container_name: app
@@ -29,19 +48,98 @@ services:
     depends_on:
       database:
         condition: service_healthy
+      opentelemetry-collector:
+        condition: service_started
     environment:
-      # TODO: pull this into the application.yml so it can be used in the application without duplicating
       SPRING_DATASOURCE_URL: jdbc:postgresql://database:5432/banking
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: password
-  
-  # frontend:
-  #   container_name: frontend
-  #   build:
-  #     context: ./frontend
-  #     dockerfile: Dockerfile
-  #   depends_on:
-  #     - app
+      OTEL_TRACES_SAMPLER: always_on
+      OTEL_TRACES_EXPORTER: otlp
+      OTEL_METRICS_EXPORTER: otlp
+      OTEL_LOGS_EXPORTER: otlp
+      OTEL_EXPORTER_OTLP_PROTOCOL: grpc
+      OTEL_SERVICE_NAME: banking-service
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://opentelemetry-collector:4317
+      OTEL_PROPAGATORS: tracecontext,baggage
+      # Enhanced logging configuration
+      OTEL_JAVA_ENABLED_LOGGERS: com.array
+      OTEL_INSTRUMENTATION_LOGBACK_APPENDER_ENABLED: true
+      OTEL_RESOURCE_ATTRIBUTES: service.name=banking-service,container=app
+    networks:
+      - banking-network
+
+  # Prometheus for metrics
+  prometheus:
+    image: prom/prometheus:v2.49.1
+    container_name: prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    ports:
+      - "9090:9090"
+    networks:
+      - banking-network
+
+  # Tempo for traces
+  tempo:
+    image: grafana/tempo:2.3.1
+    container_name: tempo
+    command: [ "-config.file=/etc/tempo.yml" ]
+    volumes:
+      - ./tempo.yml:/etc/tempo.yml
+      - tempo-data:/tmp/tempo
+    ports:
+      - "3200:3200"   # tempo UI
+      - "4319:4317"   # otlp grpc, changed to avoid conflict
+    networks:
+      - banking-network
+
+  # Simple Loki setup
+  loki:
+    image: grafana/loki:2.9.3
+    container_name: loki
+    user: "0"
+    command: -config.file=/etc/loki/config/loki-local-config.yml
+    volumes:
+      - ./loki-local-config.yml:/etc/loki/config/loki-local-config.yml
+      - loki-data:/loki
+    ports:
+      - "3100:3100"
+    networks:
+      - banking-network
+
+  # Grafana for visualization
+  grafana:
+    image: grafana/grafana:10.2.3
+    container_name: grafana
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana-provisioning:/etc/grafana/provisioning
+    environment:
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+      - tempo
+      - loki
+    networks:
+      - banking-network
 
 volumes:
   postgres-data:
+  prometheus-data:
+  tempo-data:
+  grafana-data:
+  loki-data:
+
+networks:
+  banking-network:
+    driver: bridge
