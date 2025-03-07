@@ -22,7 +22,7 @@ services:
 
   opentelemetry-collector:
     build:
-      context: ./otel-collector
+      context: ./monitoring/otel-collector
       dockerfile: Dockerfile
     container_name: otel-collector
     ports:
@@ -74,7 +74,7 @@ services:
     image: prom/prometheus:v2.49.1
     container_name: prometheus
     volumes:
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
       - prometheus-data:/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
@@ -92,7 +92,7 @@ services:
     container_name: tempo
     command: [ "-config.file=/etc/tempo.yml" ]
     volumes:
-      - ./tempo.yml:/etc/tempo.yml
+      - ./monitoring/tempo.yml:/etc/tempo.yml
       - tempo-data:/tmp/tempo
     ports:
       - "3200:3200"   # tempo UI
@@ -107,7 +107,7 @@ services:
     user: "0"
     command: -config.file=/etc/loki/config/loki-local-config.yml
     volumes:
-      - ./loki-local-config.yml:/etc/loki/config/loki-local-config.yml
+      - ./monitoring/loki-local-config.yml:/etc/loki/config/loki-local-config.yml
       - loki-data:/loki
     ports:
       - "3100:3100"
@@ -120,7 +120,7 @@ services:
     container_name: grafana
     volumes:
       - grafana-data:/var/lib/grafana
-      - ./grafana-provisioning:/etc/grafana/provisioning
+      - ./monitoring/grafana-provisioning:/etc/grafana/provisioning
     environment:
       - GF_AUTH_ANONYMOUS_ENABLED=true
       - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
