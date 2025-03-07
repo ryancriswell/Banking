@@ -5,6 +5,7 @@ import com.array.banking.model.TransactionStatus;
 import com.array.banking.model.TransactionType;
 import com.array.banking.model.User;
 import com.array.banking.repository.TransactionRepository;
+import com.array.banking.util.CurrencyUtil;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,7 +24,7 @@ import java.util.List;
 public class TransactionService {
 
     private final TransactionRepository transactionRepository;
-    private final UserService userService;
+    private final BalanceService balanceService;
 
     public List<Transaction> getUserTransactions(User user) {
         return transactionRepository.findByUser(user);
@@ -50,72 +51,64 @@ public class TransactionService {
     }
 
     @Transactional
-    public Integer transfer(User sender, User recipient, BigDecimal amount) {
-        log.info("Transferring ${} from {} to {}", amount, sender.getUsername(), recipient.getUsername());
+    public Integer transfer(User sender, User recipient, BigDecimal amountInDollars) {
+        Long amountInCents = CurrencyUtil.dollarsToCents(amountInDollars);
+        log.info("Transferring {} cents from {} to {}", amountInCents, sender.getUsername(), recipient.getUsername());
 
-        if (amount.compareTo(BigDecimal.ZERO) <= 0) {
+        if (amountInCents <= 0) {
             throw new IllegalArgumentException("Transfer amount must be positive");
         }
         if (sender.equals(recipient)) {
             throw new IllegalArgumentException("Cannot transfer to self");
         }
 
-        // Calculate new balances
-        BigDecimal senderNewBalance = sender.getBalance().subtract(amount);
-        BigDecimal recipientNewBalance = recipient.getBalance().add(amount);
+        // Create transaction records
+        Transaction outgoing = new Transaction(sender, amountInCents, TransactionType.TRANSFER_OUT);
+        Transaction incoming = new Transaction(recipient, amountInCents, TransactionType.TRANSFER_IN);
 
-        // Create transaction records with the updated balances
-        Transaction outgoing = new Transaction(sender, amount, TransactionType.TRANSFER_OUT, senderNewBalance);
-        Transaction incoming = new Transaction(recipient, amount, TransactionType.TRANSFER_IN, recipientNewBalance);
-
-        if (sender.getBalance().compareTo(amount) < 0) {
-            // Still persist failed transactions without updating user balances
+        if (!balanceService.hasSufficientBalance(sender, amountInCents)) {
+            // Still persist failed transactions
             failAndSaveTransaction(outgoing);
             failAndSaveTransaction(incoming);
             throw new IllegalArgumentException("Transaction Failed: Insufficient funds for transfer");
         } else {
-            // Mark transactions as completed fragilly. What if the transaction fails at the DB level?
+            // Mark transactions as completed
             completeAndSaveTransaction(outgoing);
             completeAndSaveTransaction(incoming);
         }
 
-        // Update user balances
-        userService.updateUserBalance(sender, senderNewBalance);
-        userService.updateUserBalance(recipient, recipientNewBalance);
         return outgoing.getTransactionId();
     }
     
     @Transactional
-    public BigDecimal deposit(User user, BigDecimal amount) {
-        log.info("Depositing ${} for {}", amount, user.getUsername());
-        BigDecimal currentBalance = user.getBalance();
-        BigDecimal newBalance = currentBalance.add(amount);
-        Transaction transaction = new Transaction(user, amount, TransactionType.DEPOSIT, newBalance);
+    public Long deposit(User user, BigDecimal amountInDollars) {
+        Long amountInCents = CurrencyUtil.dollarsToCents(amountInDollars);
+        Long currentBalance = balanceService.getCurrentBalanceInCents(user);
+        log.info("Depositing {} cents for {}", amountInCents, user.getUsername());
         
-        userService.updateUserBalance(user, newBalance);
+        Transaction transaction = new Transaction(user, amountInCents, TransactionType.DEPOSIT);
         completeAndSaveTransaction(transaction);
-        return newBalance;
+        
+        return currentBalance + amountInCents;
     }
 
-    // Non-transfer transactions
     @Transactional
-    public BigDecimal withdraw(User user, BigDecimal amount) {
-        log.info("Withdrawing ${} from {}", amount, user.getUsername());
-        BigDecimal currentBalance = user.getBalance();
+    public Long withdraw(User user, BigDecimal amountInDollars) {
+        Long amountInCents = CurrencyUtil.dollarsToCents(amountInDollars);
+        log.info("Withdrawing {} cents from {}", amountInCents, user.getUsername());
+        
+        Long currentBalance = balanceService.getCurrentBalanceInCents(user);
 
-        if (currentBalance.compareTo(amount) >= 0) {
-            BigDecimal newBalance = currentBalance.subtract(amount);
-            Transaction transaction = new Transaction(user, amount, TransactionType.WITHDRAWAL, newBalance);
-            userService.updateUserBalance(user, newBalance);
+        if (balanceService.hasSufficientBalance(user, amountInCents)) {
+            Transaction transaction = new Transaction(user, amountInCents, TransactionType.WITHDRAWAL);
             completeAndSaveTransaction(transaction);
-            return newBalance;
+            return currentBalance - amountInCents;
         } else {
             log.warn("Withdrawal failed due to insufficient funds");
-            Transaction transaction = new Transaction(user, amount, TransactionType.WITHDRAWAL, currentBalance);
+            Transaction transaction = new Transaction(user, amountInCents, TransactionType.WITHDRAWAL);
             failAndSaveTransaction(transaction);
-            // Return current balance if withdrawal fails
             return currentBalance;
         }   
     }
-    
+
 }

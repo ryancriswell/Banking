@@ -4,7 +4,6 @@ CREATE TABLE users (
     username VARCHAR(50) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL, -- Store hashed passwords only
     email VARCHAR(100) UNIQUE NOT NULL,
-    balance DECIMAL(12,2) NOT NULL DEFAULT 0.00 CHECK (balance >= 0), -- Prevent negative balance
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -15,10 +14,9 @@ CREATE TYPE transaction_type AS ENUM ('deposit', 'withdrawal', 'transfer_in', 't
 CREATE TABLE transactions (
     transaction_id SERIAL PRIMARY KEY,
     user_id INTEGER NOT NULL REFERENCES users(user_id),
-    amount DECIMAL(12,2) NOT NULL,
+    amount BIGINT NOT NULL, -- Store amount in cents
     transaction_type VARCHAR(20) NOT NULL,
     timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    balance_after DECIMAL(12,2) NOT NULL,
     "status" VARCHAR(20) NOT NULL
 );
 

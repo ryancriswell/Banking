@@ -4,7 +4,6 @@ import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
@@ -26,9 +25,6 @@ public class User {
     
     @Column(name = "email", nullable = false, unique = true, length = 100)
     private String email;
-    
-    @Column(name = "balance", nullable = false)
-    private BigDecimal balance = BigDecimal.ZERO;
     
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();

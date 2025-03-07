@@ -5,7 +5,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
@@ -25,7 +24,7 @@ public class Transaction {
     private User user;
     
     @Column(name = "amount", nullable = false)
-    private BigDecimal amount;
+    private Long amount; // Amount in cents
     
     @Enumerated(EnumType.STRING)
     @Column(name = "transaction_type", nullable = false)
@@ -33,26 +32,21 @@ public class Transaction {
     
     @Column(name = "timestamp", nullable = false)
     private LocalDateTime timestamp = LocalDateTime.now();
-    
-    @Column(name = "balance_after", nullable = false)
-    private BigDecimal balanceAfter;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
     private TransactionStatus status = TransactionStatus.PENDING;
     
-    public Transaction(User user, BigDecimal amount, TransactionType type, BigDecimal balanceAfter) {
+    public Transaction(User user, Long amountInCents, TransactionType type) {
         this.user = user;
-        this.amount = amount;
+        this.amount = amountInCents;
         this.type = type;
-        this.balanceAfter = balanceAfter;
     }
 
-    public Transaction(User user, BigDecimal amount, TransactionType type, BigDecimal balanceAfter, TransactionStatus status) {
+    public Transaction(User user, Long amountInCents, TransactionType type, TransactionStatus status) {
         this.user = user;
-        this.amount = amount;
+        this.amount = amountInCents;
         this.type = type;
-        this.balanceAfter = balanceAfter;
         this.status = status;
     }
 }

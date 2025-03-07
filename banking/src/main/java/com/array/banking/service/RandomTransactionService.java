@@ -2,6 +2,7 @@ package com.array.banking.service;
 
 import com.array.banking.model.TransactionType;
 import com.array.banking.model.User;
+import com.array.banking.util.CurrencyUtil;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -36,12 +37,12 @@ public class RandomTransactionService {
                     transactionService.withdraw(user, amount);
                     break;
                   case TRANSFER_IN:
-                    // TODO: possible to transfer to self, should result in a failed transaction if so
+                    // can generate transfers from/to itself, which will fail
                     User sender = userService.findRandomUser();
                     transactionService.transfer(sender, user, amount);
                     break;
                 case TRANSFER_OUT:
-                    // TODO: possible to transfer to self, should result in a failed transaction if so
+                    // can generate transfers from/to itself, which will fail
                     User recipient = userService.findRandomUser();
                     transactionService.transfer(user, recipient, amount);
                     break;
@@ -63,6 +64,4 @@ public class RandomTransactionService {
         double amount = 0.01 + (1000.00 - 0.01) * random.nextDouble();
         return BigDecimal.valueOf(amount).setScale(2, RoundingMode.HALF_UP);
     }
-       
-
 }

@@ -5,6 +5,7 @@ import com.array.banking.dto.TransferRequest;
 import com.array.banking.dto.TransferResponse;
 import com.array.banking.model.Transaction;
 import com.array.banking.model.User;
+import com.array.banking.service.BalanceService;
 import com.array.banking.service.TransactionService;
 import com.array.banking.service.UserService;
 import org.springframework.data.domain.Page;
@@ -29,8 +30,8 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class BankingController {
     
+    private final BalanceService balanceService;
     private final UserService userService;
-    
     private final TransactionService transactionService;
     
     /**
@@ -39,7 +40,8 @@ public class BankingController {
     @GetMapping("/balance")
     public ResponseEntity<BalanceResponse> getBalance() {
         User user = getCurrentUser();
-        BalanceResponse response = new BalanceResponse(user.getUsername(), user.getBalance());
+        BigDecimal userBalance = balanceService.getCurrentBalanceInDollars(user);
+        BalanceResponse response = new BalanceResponse(user.getUsername(), userBalance);
         return ResponseEntity.ok(response);
     }
     
@@ -62,8 +64,10 @@ public class BankingController {
     }
     
     /**
-     * Transfer funds to another user
-     * Ensures overdrafts are not allowed
+     * Transfer funds to another user.
+     * Ensures overdrafts are not allowed.
+     * The response isn't guaranteed to be in sync with the balance calculated by the transaction ledger.
+     * Instead, the response is based on the balance when the transfer began and the amount transferred after it succeeds.
      */
     @PostMapping("/transfer")
     public ResponseEntity<?> transfer(@Valid @RequestBody TransferRequest transferRequest) {
@@ -71,13 +75,14 @@ public class BankingController {
             User sender = getCurrentUser();
             String recipientUsername = transferRequest.getRecipientUsername();
             BigDecimal amount = transferRequest.getAmount();
+            BigDecimal senderBalance = balanceService.getCurrentBalanceInDollars(sender);
             
             // Check for self-transfer
             if (sender.getUsername().equals(recipientUsername)) {
                 return ResponseEntity.badRequest().body("Cannot transfer funds to yourself");
             }
             
-            if (sender.getBalance().compareTo(amount) < 0) {
+            if (senderBalance.compareTo(amount) < 0) {
                 return ResponseEntity.badRequest().body("Insufficient funds for transfer");
             }
             
@@ -88,10 +93,12 @@ public class BankingController {
             
             User recipient = recipientOpt.get();
             Integer transactionId = transactionService.transfer(sender, recipient, amount);
+            // Respond with an assumption of the new balance, may be out of sync with the actual balance
+            BigDecimal newBalance = senderBalance.subtract(amount);
             
             TransferResponse response = new TransferResponse(
                 "Transfer successful",
-                sender.getBalance(),
+                newBalance,
                 transactionId
             );
             

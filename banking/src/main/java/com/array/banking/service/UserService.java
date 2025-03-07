@@ -11,7 +11,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.Optional;
 
@@ -77,20 +76,6 @@ public class UserService implements UserDetailsService {
         String hashedPassword = passwordEncoder.encode(password);
         User user = new User(username, hashedPassword, email);
         return userRepository.save(user);
-    }
-
-    /**
-     * Update a user's balance
-     * This method is used in transfer operations
-     */
-    @Transactional
-    public void updateUserBalance(User user, BigDecimal newBalance) {
-        if (newBalance.compareTo(BigDecimal.ZERO) < 0) {
-            throw new IllegalArgumentException("Balance cannot be negative");
-        }
-        
-        user.setBalance(newBalance);
-        userRepository.save(user);
     }
 
     /**

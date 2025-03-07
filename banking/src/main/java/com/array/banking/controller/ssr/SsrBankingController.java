@@ -84,7 +84,7 @@ public class SsrBankingController {
     public String transferForm(Model model) {
         User user = getCurrentUser();
         model.addAttribute("user", user);
-        model.addAttribute("balance", user.getBalance());
+        model.addAttribute("balance", user.calculateBalanceForUser());
         model.addAttribute("transferRequest", new TransferRequest());
         return "ssr/transfer";
     }
