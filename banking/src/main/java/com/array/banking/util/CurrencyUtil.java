@@ -2,13 +2,10 @@ package com.array.banking.util;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.text.NumberFormat;
-import java.util.Locale;
 
-// Format currency for the frontend responses
+// Format currency for for conversion between frontend requests and responses
+// TODO: Add more currency conversion methods for supporting other currency types
 public class CurrencyUtil {
-
-    private static final NumberFormat CURRENCY_FORMATTER = NumberFormat.getCurrencyInstance(Locale.US);
 
     /**
      * Convert dollars and cents to cents (Long)

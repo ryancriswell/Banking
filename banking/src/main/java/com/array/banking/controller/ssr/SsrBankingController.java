@@ -3,6 +3,7 @@ package com.array.banking.controller.ssr;
 import com.array.banking.dto.TransferRequest;
 import com.array.banking.model.Transaction;
 import com.array.banking.model.User;
+import com.array.banking.service.BalanceService;
 import com.array.banking.service.TransactionService;
 import com.array.banking.service.UserService;
 
@@ -42,13 +43,14 @@ import lombok.extern.slf4j.Slf4j;
 public class SsrBankingController {
     
     private final UserService userService;
+    private final BalanceService balanceService;
     private final TransactionService transactionService;
     
     @GetMapping("/dashboard")
     public String dashboard(Model model) {
         User user = getCurrentUser();
         model.addAttribute("user", user);
-        model.addAttribute("balance", user.getBalance());
+        model.addAttribute("balance", balanceService.getCurrentBalanceInDollars(user));
         model.addAttribute("recentTransactions", 
             transactionService.getRecentTransactions(user).stream().limit(5).toList());
         return "ssr/dashboard";
@@ -84,7 +86,7 @@ public class SsrBankingController {
     public String transferForm(Model model) {
         User user = getCurrentUser();
         model.addAttribute("user", user);
-        model.addAttribute("balance", user.calculateBalanceForUser());
+        model.addAttribute("balance", balanceService.getCurrentBalanceInDollars(user));
         model.addAttribute("transferRequest", new TransferRequest());
         return "ssr/transfer";
     }
@@ -97,7 +99,7 @@ public class SsrBankingController {
         
         User user = getCurrentUser();
         model.addAttribute("user", user);
-        model.addAttribute("balance", user.getBalance());
+        model.addAttribute("balance", balanceService.getCurrentBalanceInDollars(user));
         
         if (bindingResult.hasErrors()) {
             log.error("Transfer request has errors: {}", bindingResult.getAllErrors());
@@ -115,7 +117,7 @@ public class SsrBankingController {
             }
             
             // Check for sufficient funds
-            if (user.getBalance().compareTo(amount) < 0) {
+            if (balanceService.getCurrentBalanceInDollars(user).compareTo(amount) < 0) {
                 model.addAttribute("error", "Insufficient funds for transfer");
                 return "ssr/transfer";
             }
@@ -132,11 +134,11 @@ public class SsrBankingController {
             transactionService.transfer(user, recipient, amount);
             
             redirectAttributes.addFlashAttribute("successMessage", 
-                "Transfer successful. Your new balance is $" + user.getBalance());
+                "Transfer successful. Your new balance is $" + balanceService.getCurrentBalanceInDollars(user));
             
             // For HTMX requests, return a fragment with the new balance
             if (isHtmxRequest()) {
-                model.addAttribute("balance", user.getBalance());
+                model.addAttribute("balance", balanceService.getCurrentBalanceInDollars(user));
                 return "ssr/fragments/balance";
             }
             
