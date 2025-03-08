@@ -51,7 +51,6 @@ public class TransactionService {
     @Transactional()
     public Integer transfer(User sender, User recipient, BigDecimal amountInDollars) {
         Long amountInCents = CurrencyUtil.dollarsToCents(amountInDollars);
-        log.info("Transferring {} cents from {} to {}", amountInCents, sender.getUsername(), recipient.getUsername());
 
         if (amountInCents <= 0) {
             throw new IllegalArgumentException("Transfer amount must be positive");
@@ -80,7 +79,6 @@ public class TransactionService {
     public Long deposit(User user, BigDecimal amountInDollars) {
         Long amountInCents = CurrencyUtil.dollarsToCents(amountInDollars);
         Long currentBalance = balanceService.getCurrentBalanceInCents(user);
-        log.info("Depositing {} cents for {}", amountInCents, user.getUsername());
         
         Transaction transaction = new Transaction(user, amountInCents, TransactionType.DEPOSIT);
         completeAndSaveTransaction(transaction);
@@ -91,7 +89,6 @@ public class TransactionService {
     @Transactional()
     public Long withdraw(User user, BigDecimal amountInDollars) {
         Long amountInCents = CurrencyUtil.dollarsToCents(amountInDollars);
-        log.info("Withdrawing {} cents from {}", amountInCents, user.getUsername());
         
         Long currentBalance = balanceService.getCurrentBalanceInCents(user);
         Transaction transaction = new Transaction(user, amountInCents, TransactionType.WITHDRAWAL);
