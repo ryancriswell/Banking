@@ -1,5 +1,6 @@
 package com.array.banking.controller.ssr;
 
+import com.array.banking.dto.BalancedTransaction;
 import com.array.banking.dto.TransferRequest;
 import com.array.banking.model.Transaction;
 import com.array.banking.model.User;
@@ -31,10 +32,13 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.math.BigDecimal;
 import java.util.Optional;
+import java.util.List;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+
+// TODO: This is a lot of logic for a "controller", probably want to move most of it to an SsrService instead  
 @Controller
 @RequestMapping("/ssr")
 @Slf4j
@@ -51,8 +55,18 @@ public class SsrBankingController {
         User user = getCurrentUser();
         model.addAttribute("user", user);
         model.addAttribute("balance", balanceService.getCurrentBalanceInDollars(user));
-        model.addAttribute("recentTransactions", 
-            transactionService.getRecentTransactions(user).stream().limit(5).toList());
+
+        Pageable pageable = PageRequest.of(0, 5);
+        List<Transaction> recentTransactions = transactionService
+                .getUserTransactionsPaginated(user, pageable)
+                .stream()
+                    .limit(5)
+                .toList();
+
+        // Convert recent transactions to BalancedTransaction objects
+        List<BalancedTransaction> balancedTransactions = balanceService.balanceTransactions(recentTransactions);
+        
+        model.addAttribute("recentTransactions", balancedTransactions);
         return "ssr/dashboard";
     }
     
@@ -62,17 +76,17 @@ public class SsrBankingController {
             @RequestParam(defaultValue = "10") @Min(1) int size,
             Model model) {
         
-        // Cap the maximum page size
-        size = Math.min(size, 100);
-        
         User user = getCurrentUser();
         Pageable pageable = PageRequest.of(page, size);
-        Page<Transaction> transactions = transactionService.getUserTransactionsPaginated(user, pageable);
+        Page<Transaction> transactionsPage = transactionService.getUserTransactionsPaginated(user, pageable);
         
+        // Convert Transaction objects to BalancedTransaction objects
+        List<BalancedTransaction> balancedTransactions = balanceService.balanceTransactions(transactionsPage.getContent());
+
         model.addAttribute("user", user);
-        model.addAttribute("transactions", transactions);
+        model.addAttribute("transactions", balancedTransactions);
         model.addAttribute("currentPage", page);
-        model.addAttribute("totalPages", transactions.getTotalPages());
+        model.addAttribute("totalPages", transactionsPage.getTotalPages());
         
         // For partial HTMX updates
         if (isHtmxRequest()) {
@@ -109,6 +123,7 @@ public class SsrBankingController {
         try {
             String recipientUsername = transferRequest.getRecipientUsername();
             BigDecimal amount = transferRequest.getAmount();
+            BigDecimal currentBalance = balanceService.getCurrentBalanceInDollars(user);
             
             // Check for self-transfer
             if (user.getUsername().equals(recipientUsername)) {
@@ -117,7 +132,7 @@ public class SsrBankingController {
             }
             
             // Check for sufficient funds
-            if (balanceService.getCurrentBalanceInDollars(user).compareTo(amount) < 0) {
+            if (currentBalance.compareTo(amount) < 0) {
                 model.addAttribute("error", "Insufficient funds for transfer");
                 return "ssr/transfer";
             }
@@ -132,13 +147,14 @@ public class SsrBankingController {
             // Perform transfer
             User recipient = recipientOpt.get();
             transactionService.transfer(user, recipient, amount);
+            BigDecimal newBalance = currentBalance.subtract(amount);
             
             redirectAttributes.addFlashAttribute("successMessage", 
-                "Transfer successful. Your new balance is $" + balanceService.getCurrentBalanceInDollars(user));
+                "Transfer successful. Your new balance is $" + newBalance);
             
             // For HTMX requests, return a fragment with the new balance
             if (isHtmxRequest()) {
-                model.addAttribute("balance", balanceService.getCurrentBalanceInDollars(user));
+                model.addAttribute("balance", newBalance);
                 return "ssr/fragments/balance";
             }
             

@@ -27,30 +27,33 @@ public class TransactionService {
     private final BalanceService balanceService;
 
     public List<Transaction> getUserTransactions(User user) {
-        return transactionRepository.findByUser(user);
+        return transactionRepository.findByUserOrderByTimestampDescTransactionIdDesc(user);
     }
 
     public Page<Transaction> getUserTransactionsPaginated(User user, Pageable pageable) {
-        return transactionRepository.findByUserOrderByTimestampDesc(user, pageable);
-    }
-
-    public List<Transaction> getRecentTransactions(User user) {
-        return transactionRepository.findByUserOrderByTimestampDesc(user);
+        return transactionRepository.findByUserOrderByTimestampDescTransactionIdDesc(user, pageable);
     }
     
-    @Transactional
+    /**
+     * Complete a transaction by setting its status to COMPLETED
+     */
+    @Transactional()
     public Transaction completeAndSaveTransaction(Transaction transaction) {
         transaction.setStatus(TransactionStatus.COMPLETED);
         return transactionRepository.save(transaction);
     }
 
-    @Transactional
+    /**
+     * Fail a transaction by setting its status to FAILED
+     */
+    @Transactional()
     public Transaction failAndSaveTransaction(Transaction transaction) {
+        // For failed transactions, the balance doesn't change
         transaction.setStatus(TransactionStatus.FAILED);
         return transactionRepository.save(transaction);
     }
 
-    @Transactional
+    @Transactional()
     public Integer transfer(User sender, User recipient, BigDecimal amountInDollars) {
         Long amountInCents = CurrencyUtil.dollarsToCents(amountInDollars);
         log.info("Transferring {} cents from {} to {}", amountInCents, sender.getUsername(), recipient.getUsername());
@@ -62,17 +65,17 @@ public class TransactionService {
             throw new IllegalArgumentException("Cannot transfer to self");
         }
 
-        // Create transaction records
+        // Create transaction records - no balance_after set yet
         Transaction outgoing = new Transaction(sender, amountInCents, TransactionType.TRANSFER_OUT);
         Transaction incoming = new Transaction(recipient, amountInCents, TransactionType.TRANSFER_IN);
 
         if (!balanceService.hasSufficientBalance(sender, amountInCents)) {
-            // Still persist failed transactions
+            // Set both transactions as failed
             failAndSaveTransaction(outgoing);
             failAndSaveTransaction(incoming);
             throw new IllegalArgumentException("Transaction Failed: Insufficient funds for transfer");
         } else {
-            // Mark transactions as completed
+            // Complete transactions, which will calculate and set balance_after
             completeAndSaveTransaction(outgoing);
             completeAndSaveTransaction(incoming);
         }
@@ -80,7 +83,7 @@ public class TransactionService {
         return outgoing.getTransactionId();
     }
     
-    @Transactional
+    @Transactional()
     public Long deposit(User user, BigDecimal amountInDollars) {
         Long amountInCents = CurrencyUtil.dollarsToCents(amountInDollars);
         Long currentBalance = balanceService.getCurrentBalanceInCents(user);
@@ -92,20 +95,19 @@ public class TransactionService {
         return currentBalance + amountInCents;
     }
 
-    @Transactional
+    @Transactional()
     public Long withdraw(User user, BigDecimal amountInDollars) {
         Long amountInCents = CurrencyUtil.dollarsToCents(amountInDollars);
         log.info("Withdrawing {} cents from {}", amountInCents, user.getUsername());
         
         Long currentBalance = balanceService.getCurrentBalanceInCents(user);
+        Transaction transaction = new Transaction(user, amountInCents, TransactionType.WITHDRAWAL);
 
         if (balanceService.hasSufficientBalance(user, amountInCents)) {
-            Transaction transaction = new Transaction(user, amountInCents, TransactionType.WITHDRAWAL);
             completeAndSaveTransaction(transaction);
             return currentBalance - amountInCents;
         } else {
             log.warn("Withdrawal failed due to insufficient funds");
-            Transaction transaction = new Transaction(user, amountInCents, TransactionType.WITHDRAWAL);
             failAndSaveTransaction(transaction);
             return currentBalance;
         }   

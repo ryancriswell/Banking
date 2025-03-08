@@ -1,3 +1,7 @@
+-- Potential Optimizations:
+-- 1. Use ENUM type for transaction_type
+-- 2. Keep the transactions sorted by timestamp so that we can query the transactions by time faster
+
 -- Create users table
 CREATE TABLE users (
     user_id SERIAL PRIMARY KEY,
@@ -17,7 +21,6 @@ CREATE TABLE transactions (
     amount BIGINT NOT NULL,
     transaction_type VARCHAR(20) NOT NULL,
     timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    balance_after BIGINT NOT NULL,
     "status" VARCHAR(20) NOT NULL
 );
 

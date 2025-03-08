@@ -36,9 +36,6 @@ public class Transaction {
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
     private TransactionStatus status = TransactionStatus.PENDING;
-
-    @Column(name = "balance_after", nullable = false)
-    private Long balanceAfter;
     
     public Transaction(User user, Long amountInCents, TransactionType type) {
         this.user = user;

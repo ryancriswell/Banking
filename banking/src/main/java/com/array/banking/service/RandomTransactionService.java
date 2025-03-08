@@ -2,7 +2,6 @@ package com.array.banking.service;
 
 import com.array.banking.model.TransactionType;
 import com.array.banking.model.User;
-import com.array.banking.util.CurrencyUtil;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
