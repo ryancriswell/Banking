@@ -16,7 +16,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -25,10 +24,6 @@ public class TransactionService {
 
     private final TransactionRepository transactionRepository;
     private final BalanceService balanceService;
-
-    public List<Transaction> getUserTransactions(User user) {
-        return transactionRepository.findByUserOrderByTimestampDescTransactionIdDesc(user);
-    }
 
     public Page<Transaction> getUserTransactionsPaginated(User user, Pageable pageable) {
         return transactionRepository.findByUserOrderByTimestampDescTransactionIdDesc(user, pageable);
@@ -65,7 +60,6 @@ public class TransactionService {
             throw new IllegalArgumentException("Cannot transfer to self");
         }
 
-        // Create transaction records - no balance_after set yet
         Transaction outgoing = new Transaction(sender, amountInCents, TransactionType.TRANSFER_OUT);
         Transaction incoming = new Transaction(recipient, amountInCents, TransactionType.TRANSFER_IN);
 
@@ -75,7 +69,6 @@ public class TransactionService {
             failAndSaveTransaction(incoming);
             throw new IllegalArgumentException("Transaction Failed: Insufficient funds for transfer");
         } else {
-            // Complete transactions, which will calculate and set balance_after
             completeAndSaveTransaction(outgoing);
             completeAndSaveTransaction(incoming);
         }

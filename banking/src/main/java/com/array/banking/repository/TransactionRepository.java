@@ -23,27 +23,9 @@ public interface TransactionRepository extends JpaRepository<Transaction, Intege
     
     List<Transaction> findByUserAndTimestampBetween(User user, LocalDateTime start, LocalDateTime end);
     
-    // Update method name to indicate secondary sort criterion
     List<Transaction> findByUserOrderByTimestampDescTransactionIdDesc(User user);
     
-    // Update method to ensure consistent sorting with timestamp and transaction ID
     Page<Transaction> findByUserOrderByTimestampDescTransactionIdDesc(User user, Pageable pageable);
-    
-    // Calculate user balance in cents UP TO AND INCLUDING a specific transaction
-    // TODO: Coalesce for null safety, since we have NOT NULL constraints on the columns we might be able to remove it
-    @Query(value = """
-            SELECT COALESCE(SUM(CASE 
-                WHEN UPPER(transaction_type) IN ('DEPOSIT', 'TRANSFER_IN') THEN amount 
-                WHEN UPPER(transaction_type) IN ('WITHDRAWAL', 'TRANSFER_OUT') THEN -amount 
-                ELSE 0 
-            END), 0) 
-            FROM transactions 
-            WHERE user_id = :userId AND status = 'COMPLETED'
-            AND (timestamp < (SELECT timestamp FROM transactions WHERE transaction_id = :transactionId)
-                 OR (timestamp = (SELECT timestamp FROM transactions WHERE transaction_id = :transactionId) 
-                     AND transaction_id <= :transactionId))
-            """, nativeQuery = true)
-    Long calculateBalanceAtTransaction(@Param("userId") Integer userId, @Param("transactionId") Integer transactionId);
 
     // Calculate user balance in cents from transactions
     // TODO: Coalesce for null safety, since we have NOT NULL constraints on the columns we might be able to remove it

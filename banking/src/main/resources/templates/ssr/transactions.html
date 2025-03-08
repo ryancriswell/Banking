@@ -98,21 +98,19 @@
                             <th>Type</th>
                             <th>Amount</th>
                             <th>Status</th>
-                            <th>Balance After</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr th:if="${transactions.isEmpty()}">
                             <td colspan="5">No transactions found.</td>
                         </tr>
-                        <tr th:each="balancedTx : ${transactions}">
-                            <td th:text="${#temporals.format(balancedTx.transaction.timestamp, 'MMM dd, yyyy HH:mm')}">Jan 01, 2023</td>
-                            <td th:text="${balancedTx.transaction.type}">DEPOSIT</td>
-                            <td th:class="'amount ' + ${balancedTx.transaction.type.toString().toLowerCase().replace('_', '-')}">
-                                <span th:text="${'$' + #numbers.formatDecimal(balancedTx.transaction.amountInDollars, 1, 2, 'POINT')}">$0.00</span>
+                        <tr th:each="transaction : ${transactions}">
+                            <td th:text="${#temporals.format(transaction.timestamp, 'MMM dd, yyyy HH:mm')}">Jan 01, 2023</td>
+                            <td th:text="${transaction.type}">DEPOSIT</td>
+                            <td th:class="'amount ' + ${transaction.type.toString().toLowerCase().replace('_', '-')}">
+                                <span th:text="${'$' + #numbers.formatDecimal(transaction.amount * 1.0 / 100, 1, 2, 'POINT')}">$0.00</span>
                             </td>
-                            <td th:text="${balancedTx.transaction.status}">COMPLETED</td>
-                            <td th:text="${'$' + #numbers.formatDecimal(balancedTx.balanceAfter, 1, 2, 'POINT')}">$0.00</td>
+                            <td th:text="${transaction.status}">COMPLETED</td>
                         </tr>
                     </tbody>
                 </table>
