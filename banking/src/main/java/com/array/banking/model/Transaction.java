@@ -19,7 +19,8 @@ public class Transaction {
     @Column(name = "transaction_id")
     private Integer transactionId;
     
-    @ManyToOne
+    // Should user transactions really be deleted? Maybe we should keep them for auditing
+    @ManyToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
     

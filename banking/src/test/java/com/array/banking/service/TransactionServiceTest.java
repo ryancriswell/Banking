@@ -1,228 +1,217 @@
-// package com.array.banking.service;
+package com.array.banking.service;
 
-// import com.array.banking.model.Transaction;
-// import com.array.banking.model.TransactionStatus;
-// import com.array.banking.model.TransactionType;
-// import com.array.banking.model.User;
-// import com.array.banking.repository.TransactionRepository;
-// import org.junit.jupiter.api.BeforeEach;
-// import org.junit.jupiter.api.Test;
-// import org.junit.jupiter.api.extension.ExtendWith;
-// import org.mockito.ArgumentCaptor;
-// import org.mockito.Captor;
-// import org.mockito.InjectMocks;
-// import org.mockito.Mock;
-// import org.mockito.junit.jupiter.MockitoExtension;
-// import org.springframework.data.domain.Page;
-// import org.springframework.data.domain.PageImpl;
-// import org.springframework.data.domain.PageRequest;
-// import org.springframework.data.domain.Pageable;
+import com.array.banking.model.Transaction;
+import com.array.banking.model.TransactionStatus;
+import com.array.banking.model.TransactionType;
+import com.array.banking.model.User;
+import com.array.banking.repository.TransactionRepository;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
-// import java.math.BigDecimal;
-// import java.util.ArrayList;
-// import java.util.List;
+import java.math.BigDecimal;
+import java.util.List;
 
-// import static org.junit.jupiter.api.Assertions.*;
-// import static org.mockito.ArgumentMatchers.*;
-// import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
-// @ExtendWith(MockitoExtension.class)
-// public class TransactionServiceTest {
+@ExtendWith(MockitoExtension.class)
+public class TransactionServiceTest {
 
-//     @Mock
-//     private TransactionRepository transactionRepository;
-
-//     @Mock
-//     private UserService userService;
-
-//     @InjectMocks
-//     private TransactionService transactionService;
-
-//     @Captor
-//     private ArgumentCaptor<Transaction> transactionCaptor;
-
-//     private User sender;
-//     private User recipient;
-//     private BigDecimal amount;
-
-//     @BeforeEach
-//     void setUp() {
-//         sender = new User("sender", "password", "sender@example.com");
-//         sender.setUserId(1);
-//         sender.setBalance(new BigDecimal("1000.00"));
-
-//         recipient = new User("recipient", "password", "recipient@example.com");
-//         recipient.setUserId(2);
-//         recipient.setBalance(new BigDecimal("500.00"));
-
-//         amount = new BigDecimal("100.00");
-//     }
-
-//     @Test
-//     void transfer_ShouldSucceed_WhenSenderHasSufficientFunds() {
-//         // Setup
-//         when(transactionRepository.save(any(Transaction.class))).thenAnswer(i -> i.getArgument(0));
-
-//         // Execute
-//         transactionService.transfer(sender, recipient, amount);
-       
-//         // Verify transactions were saved
-//         verify(transactionRepository, times(2)).save(transactionCaptor.capture());
-//         List<Transaction> capturedTransactions = transactionCaptor.getAllValues();
+    @Mock
+    private TransactionRepository transactionRepository;
+    
+    @Mock
+    private BalanceService balanceService;
+    
+    @InjectMocks
+    private TransactionService transactionService;
+    
+    @Captor
+    private ArgumentCaptor<Transaction> transactionCaptor;
+    
+    private User sender;
+    private User recipient;
+    private Transaction transaction;
+    
+    @BeforeEach
+    void setUp() {
+        sender = new User("sender", "password", "sender@example.com");
+        sender.setUserId(1);
         
-//         assertEquals(2, capturedTransactions.size());
+        recipient = new User("recipient", "password", "recipient@example.com");
+        recipient.setUserId(2);
         
-//         // Check outgoing transaction
-//         Transaction outgoingTx = capturedTransactions.get(0);
-//         assertEquals(sender, outgoingTx.getUser());
-//         assertEquals(TransactionType.TRANSFER_OUT, outgoingTx.getType());
-//         assertEquals(amount, outgoingTx.getAmount());
-//         assertEquals(TransactionStatus.COMPLETED, outgoingTx.getStatus());
-//         assertEquals(new BigDecimal("900.00"), outgoingTx.getBalanceAfter());
+        transaction = new Transaction(sender, 10000L, TransactionType.TRANSFER_OUT);
+        transaction.setTransactionId(1);
+    }
+    
+    @Test
+    void getUserTransactionsPaginated_ShouldReturnTransactions() {
+        Pageable pageable = PageRequest.of(0, 10);
+        List<Transaction> transactions = List.of(transaction);
+        Page<Transaction> page = new PageImpl<>(transactions, pageable, 1);
         
-//         // Check incoming transaction
-//         Transaction incomingTx = capturedTransactions.get(1);
-//         assertEquals(recipient, incomingTx.getUser());
-//         assertEquals(TransactionType.TRANSFER_IN, incomingTx.getType());
-//         assertEquals(amount, incomingTx.getAmount());
-//         assertEquals(TransactionStatus.COMPLETED, incomingTx.getStatus());
-//         assertEquals(new BigDecimal("600.00"), incomingTx.getBalanceAfter());
+        when(transactionRepository.findByUserOrderByTimestampDescTransactionIdDesc(sender, pageable))
+            .thenReturn(page);
         
-//         // Verify balances were updated
-//         verify(userService).updateUserBalance(sender, new BigDecimal("900.00"));
-//         verify(userService).updateUserBalance(recipient, new BigDecimal("600.00"));
-//     }
-
-//     @Test
-//     void transfer_ShouldThrowException_WhenSenderHasInsufficientFunds() {
-//         // Setup
-//         BigDecimal largeAmount = new BigDecimal("2000.00");
-//         when(transactionRepository.save(any(Transaction.class))).thenAnswer(i -> i.getArgument(0));
-
-//         // Execute & Verify
-//         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
-//             transactionService.transfer(sender, recipient, largeAmount);
-//         });
+        Page<Transaction> result = transactionService.getUserTransactionsPaginated(sender, pageable);
         
-//         assertEquals("Transaction Failed: Insufficient funds for transfer", exception.getMessage());
+        assertEquals(1, result.getTotalElements());
+        assertEquals(transaction, result.getContent().get(0));
+        verify(transactionRepository).findByUserOrderByTimestampDescTransactionIdDesc(sender, pageable);
+    }
+    
+    @Test
+    void completeAndSaveTransaction_ShouldCompleteTransaction() {
+        when(transactionRepository.save(any(Transaction.class))).thenReturn(transaction);
         
-//         // Verify failed transactions are recorded with FAILED status
-//         verify(transactionRepository, times(2)).save(transactionCaptor.capture());
-//         List<Transaction> capturedTransactions = transactionCaptor.getAllValues();
+        Transaction result = transactionService.completeAndSaveTransaction(transaction);
         
-//         assertEquals(2, capturedTransactions.size());
-//         capturedTransactions.forEach(tx -> assertEquals(TransactionStatus.FAILED, tx.getStatus()));
+        assertEquals(TransactionStatus.COMPLETED, result.getStatus());
+        verify(transactionRepository).save(transaction);
+    }
+    
+    @Test
+    void failAndSaveTransaction_ShouldFailTransaction() {
+        when(transactionRepository.save(any(Transaction.class))).thenReturn(transaction);
         
-//         // Verify balances were NOT updated
-//         verify(userService, never()).updateUserBalance(any(User.class), any(BigDecimal.class));
-//     }
-
-//     @Test
-//     void transfer_ShouldThrowException_WhenTransferringToSelf() {
-//         // Execute & Verify
-//         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
-//             transactionService.transfer(sender, sender, amount);
-//         });
+        Transaction result = transactionService.failAndSaveTransaction(transaction);
         
-//         assertEquals("Cannot transfer to self", exception.getMessage());
+        assertEquals(TransactionStatus.FAILED, result.getStatus());
+        verify(transactionRepository).save(transaction);
+    }
+    
+    @Test
+    void transfer_ShouldCompleteTransfer_WhenSufficientFunds() {
+        when(balanceService.hasSufficientBalance(eq(sender), anyLong())).thenReturn(true);
+        when(transactionRepository.save(any(Transaction.class)))
+            .thenAnswer(invocation -> invocation.getArgument(0));
         
-//         // Verify no transactions were created
-//         verify(transactionRepository, never()).save(any(Transaction.class));
-//         verify(userService, never()).updateUserBalance(any(User.class), any(BigDecimal.class));
-//     }
-
-//     @Test
-//     void deposit_ShouldUpdateBalance_WhenAmountIsPositive() {
-//         // Setup
-//         BigDecimal depositAmount = new BigDecimal("200.00");
-//         BigDecimal expectedBalance = new BigDecimal("1200.00");
-//         when(transactionRepository.save(any(Transaction.class))).thenAnswer(i -> i.getArgument(0));
-
-//         // Execute
-//         BigDecimal newBalance = transactionService.deposit(sender, depositAmount);
-
-//         // Verify
-//         assertEquals(expectedBalance, newBalance);
+        transactionService.transfer(sender, recipient, new BigDecimal("100.00"));
         
-//         // Verify transaction was created
-//         verify(transactionRepository).save(transactionCaptor.capture());
-//         Transaction capturedTransaction = transactionCaptor.getValue();
+        verify(balanceService).hasSufficientBalance(eq(sender), eq(10000L));
+        verify(transactionRepository, times(2)).save(transactionCaptor.capture());
         
-//         assertEquals(sender, capturedTransaction.getUser());
-//         assertEquals(TransactionType.DEPOSIT, capturedTransaction.getType());
-//         assertEquals(depositAmount, capturedTransaction.getAmount());
-//         assertEquals(TransactionStatus.COMPLETED, capturedTransaction.getStatus());
-//         assertEquals(expectedBalance, capturedTransaction.getBalanceAfter());
+        List<Transaction> savedTransactions = transactionCaptor.getAllValues();
+        assertEquals(2, savedTransactions.size());
         
-//         // Verify balance was updated
-//         verify(userService).updateUserBalance(sender, expectedBalance);
-//     }
-
-//     @Test
-//     void withdraw_ShouldReturnUpdatedBalance_WhenSufficientFunds() {
-//         // Setup
-//         BigDecimal withdrawAmount = new BigDecimal("200.00");
-//         BigDecimal expectedBalance = new BigDecimal("800.00");
-//         when(transactionRepository.save(any(Transaction.class))).thenAnswer(i -> i.getArgument(0));
-
-//         // Execute
-//         BigDecimal newBalance = transactionService.withdraw(sender, withdrawAmount);
-
-//         // Verify
-//         assertEquals(expectedBalance, newBalance);
+        Transaction outgoing = savedTransactions.get(0);
+        Transaction incoming = savedTransactions.get(1);
         
-//         // Verify transaction was created and completed
-//         verify(transactionRepository).save(transactionCaptor.capture());
-//         Transaction capturedTransaction = transactionCaptor.getValue();
+        assertEquals(TransactionType.TRANSFER_OUT, outgoing.getType());
+        assertEquals(TransactionType.TRANSFER_IN, incoming.getType());
+        assertEquals(sender, outgoing.getUser());
+        assertEquals(recipient, incoming.getUser());
+        assertEquals(TransactionStatus.COMPLETED, outgoing.getStatus());
+        assertEquals(TransactionStatus.COMPLETED, incoming.getStatus());
+        assertEquals(10000L, outgoing.getAmount());
+        assertEquals(10000L, incoming.getAmount());
+    }
+    
+    @Test
+    void transfer_ShouldFailTransfer_WhenInsufficientFunds() {
+        when(balanceService.hasSufficientBalance(eq(sender), anyLong())).thenReturn(false);
+        when(transactionRepository.save(any(Transaction.class)))
+            .thenAnswer(invocation -> invocation.getArgument(0));
         
-//         assertEquals(TransactionStatus.COMPLETED, capturedTransaction.getStatus());
-//         assertEquals(expectedBalance, capturedTransaction.getBalanceAfter());
+        assertThrows(IllegalArgumentException.class, () ->
+            transactionService.transfer(sender, recipient, new BigDecimal("100.00"))
+        );
         
-//         // Verify balance was updated
-//         verify(userService).updateUserBalance(sender, expectedBalance);
-//     }
-
-//     @Test
-//     void withdraw_ShouldReturnCurrentBalance_WhenInsufficientFunds() {
-//         // Setup
-//         BigDecimal largeAmount = new BigDecimal("2000.00");
-//         BigDecimal currentBalance = sender.getBalance();
-//         when(transactionRepository.save(any(Transaction.class))).thenAnswer(i -> i.getArgument(0));
-
-//         // Execute
-//         BigDecimal returnedBalance = transactionService.withdraw(sender, largeAmount);
-
-//         // Verify
-//         assertEquals(currentBalance, returnedBalance);
+        verify(balanceService).hasSufficientBalance(eq(sender), eq(10000L));
+        verify(transactionRepository, times(2)).save(transactionCaptor.capture());
         
-//         // Verify transaction was created but failed
-//         verify(transactionRepository).save(transactionCaptor.capture());
-//         Transaction capturedTransaction = transactionCaptor.getValue();
+        List<Transaction> savedTransactions = transactionCaptor.getAllValues();
+        assertEquals(2, savedTransactions.size());
         
-//         assertEquals(TransactionStatus.FAILED, capturedTransaction.getStatus());
+        Transaction outgoing = savedTransactions.get(0);
+        Transaction incoming = savedTransactions.get(1);
         
-//         // Verify balance was NOT updated
-//         verify(userService, never()).updateUserBalance(any(User.class), any(BigDecimal.class));
-//     }
-
-//     @Test
-//     void getUserTransactionsPaginated_ShouldReturnPagedTransactions() {
-//         // Setup
-//         List<Transaction> transactionList = new ArrayList<>();
-//         Transaction transaction = new Transaction(sender, amount, TransactionType.DEPOSIT, sender.getBalance());
-//         transactionList.add(transaction);
+        assertEquals(TransactionType.TRANSFER_OUT, outgoing.getType());
+        assertEquals(TransactionType.TRANSFER_IN, incoming.getType());
+        assertEquals(TransactionStatus.FAILED, outgoing.getStatus());
+        assertEquals(TransactionStatus.FAILED, incoming.getStatus());
+    }
+    
+    @Test
+    void transfer_ShouldThrowException_WhenTransferToSelf() {
+        assertThrows(IllegalArgumentException.class, () ->
+            transactionService.transfer(sender, sender, new BigDecimal("100.00"))
+        );
         
-//         Page<Transaction> transactionPage = new PageImpl<>(transactionList);
-//         Pageable pageable = PageRequest.of(0, 10);
+        verifyNoInteractions(balanceService);
+        verifyNoInteractions(transactionRepository);
+    }
+    
+    @Test
+    void deposit_ShouldCompleteDeposit() {
+        when(balanceService.getCurrentBalanceInCents(sender)).thenReturn(5000L);
+        when(transactionRepository.save(any(Transaction.class)))
+            .thenAnswer(invocation -> invocation.getArgument(0));
         
-//         when(transactionRepository.findByUserOrderByTimestampDesc(sender, pageable)).thenReturn(transactionPage);
-
-//         // Execute
-//         Page<Transaction> result = transactionService.getUserTransactionsPaginated(sender, pageable);
-
-//         // Verify
-//         assertNotNull(result);
-//         assertEquals(1, result.getContent().size());
-//         verify(transactionRepository).findByUserOrderByTimestampDesc(sender, pageable);
-//     }
-// }
+        Long newBalance = transactionService.deposit(sender, new BigDecimal("100.00"));
+        
+        assertEquals(15000L, newBalance);
+        verify(balanceService).getCurrentBalanceInCents(sender);
+        verify(transactionRepository).save(transactionCaptor.capture());
+        
+        Transaction savedTransaction = transactionCaptor.getValue();
+        assertEquals(TransactionType.DEPOSIT, savedTransaction.getType());
+        assertEquals(sender, savedTransaction.getUser());
+        assertEquals(10000L, savedTransaction.getAmount());
+        assertEquals(TransactionStatus.COMPLETED, savedTransaction.getStatus());
+    }
+    
+    @Test
+    void withdraw_ShouldCompleteWithdrawal_WhenSufficientFunds() {
+        when(balanceService.getCurrentBalanceInCents(sender)).thenReturn(20000L);
+        when(balanceService.hasSufficientBalance(eq(sender), anyLong())).thenReturn(true);
+        when(transactionRepository.save(any(Transaction.class)))
+            .thenAnswer(invocation -> invocation.getArgument(0));
+        
+        Long newBalance = transactionService.withdraw(sender, new BigDecimal("100.00"));
+        
+        assertEquals(10000L, newBalance);
+        verify(balanceService).getCurrentBalanceInCents(sender);
+        verify(balanceService).hasSufficientBalance(eq(sender), eq(10000L));
+        verify(transactionRepository).save(transactionCaptor.capture());
+        
+        Transaction savedTransaction = transactionCaptor.getValue();
+        assertEquals(TransactionType.WITHDRAWAL, savedTransaction.getType());
+        assertEquals(sender, savedTransaction.getUser());
+        assertEquals(10000L, savedTransaction.getAmount());
+        assertEquals(TransactionStatus.COMPLETED, savedTransaction.getStatus());
+    }
+    
+    @Test
+    void withdraw_ShouldFailWithdrawal_WhenInsufficientFunds() {
+        when(balanceService.getCurrentBalanceInCents(sender)).thenReturn(5000L);
+        when(balanceService.hasSufficientBalance(eq(sender), anyLong())).thenReturn(false);
+        when(transactionRepository.save(any(Transaction.class)))
+            .thenAnswer(invocation -> invocation.getArgument(0));
+        
+        Long newBalance = transactionService.withdraw(sender, new BigDecimal("100.00"));
+        
+        assertEquals(5000L, newBalance);
+        verify(balanceService).getCurrentBalanceInCents(sender);
+        verify(balanceService).hasSufficientBalance(eq(sender), eq(10000L));
+        verify(transactionRepository).save(transactionCaptor.capture());
+        
+        Transaction savedTransaction = transactionCaptor.getValue();
+        assertEquals(TransactionType.WITHDRAWAL, savedTransaction.getType());
+        assertEquals(sender, savedTransaction.getUser());
+        assertEquals(10000L, savedTransaction.getAmount());
+        assertEquals(TransactionStatus.FAILED, savedTransaction.getStatus());
+    }
+}
