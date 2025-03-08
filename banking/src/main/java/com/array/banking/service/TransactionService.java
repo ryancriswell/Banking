@@ -12,10 +12,12 @@ import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.concurrent.CompletableFuture;
 
 @Service
 @RequiredArgsConstructor
@@ -31,21 +33,82 @@ public class TransactionService {
     
     /**
      * Complete a transaction by setting its status to COMPLETED
+     * This method initiates an async operation and returns immediately
      */
-    @Transactional()
+    @Transactional
     public Transaction completeAndSaveTransaction(Transaction transaction) {
-        transaction.setStatus(TransactionStatus.COMPLETED);
-        return transactionRepository.save(transaction);
+        transaction.setStatus(TransactionStatus.PENDING);
+        Transaction savedTransaction = transactionRepository.save(transaction);
+        
+        // Process asynchronously
+        completeTransactionAsync(savedTransaction.getTransactionId());
+        
+        return savedTransaction;
+    }
+
+    /**
+     * Async method to complete the transaction
+     */
+    @Async("transactionExecutor")
+    @Transactional
+    public CompletableFuture<Transaction> completeTransactionAsync(Integer transactionId) {
+        try {
+            log.info("Processing transaction completion asynchronously: {}", transactionId);
+            Transaction transaction = transactionRepository.findById(transactionId)
+                .orElseThrow(() -> new RuntimeException("Transaction not found: " + transactionId));
+            
+            // Simulate some processing time
+            Thread.sleep(100);
+            
+            transaction.setStatus(TransactionStatus.COMPLETED);
+            Transaction completed = transactionRepository.save(transaction);
+            log.info("Successfully completed transaction: {}", transactionId);
+            
+            return CompletableFuture.completedFuture(completed);
+        } catch (Exception e) {
+            log.error("Error completing transaction {}: {}", transactionId, e.getMessage(), e);
+            return CompletableFuture.failedFuture(e);
+        }
     }
 
     /**
      * Fail a transaction by setting its status to FAILED
+     * This method initiates an async operation and returns immediately
      */
-    @Transactional()
+    @Transactional
     public Transaction failAndSaveTransaction(Transaction transaction) {
-        // For failed transactions, the balance doesn't change
-        transaction.setStatus(TransactionStatus.FAILED);
-        return transactionRepository.save(transaction);
+        transaction.setStatus(TransactionStatus.PENDING);
+        Transaction savedTransaction = transactionRepository.save(transaction);
+        
+        // Process asynchronously
+        failTransactionAsync(savedTransaction.getTransactionId());
+        
+        return savedTransaction;
+    }
+
+    /**
+     * Async method to fail the transaction
+     */
+    @Async("transactionExecutor")
+    @Transactional
+    public CompletableFuture<Transaction> failTransactionAsync(Integer transactionId) {
+        try {
+            log.info("Processing transaction failure asynchronously: {}", transactionId);
+            Transaction transaction = transactionRepository.findById(transactionId)
+                .orElseThrow(() -> new RuntimeException("Transaction not found: " + transactionId));
+            
+            // Simulate some processing time
+            Thread.sleep(100);
+            
+            transaction.setStatus(TransactionStatus.FAILED);
+            Transaction failed = transactionRepository.save(transaction);
+            log.info("Successfully marked transaction as failed: {}", transactionId);
+            
+            return CompletableFuture.completedFuture(failed);
+        } catch (Exception e) {
+            log.error("Error failing transaction {}: {}", transactionId, e.getMessage(), e);
+            return CompletableFuture.failedFuture(e);
+        }
     }
 
     @Transactional()
