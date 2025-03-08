@@ -1,6 +1,5 @@
 -- Potential Optimizations:
 -- 1. Use ENUM type for transaction_type
--- 2. Keep the transactions sorted by timestamp so that we can query the transactions by time faster
 
 -- Create users table
 CREATE TABLE users (
@@ -24,32 +23,5 @@ CREATE TABLE transactions (
     "status" VARCHAR(20) NOT NULL
 );
 
--- TEMPORARILY DISABLED TRIGGER TO ALLOW FAILED TRANSACTIONS FOR TESTING
-
--- Function to validate withdrawals safely, not allowing negative balance. NOT responsible for updating balances
--- CREATE OR REPLACE FUNCTION validate_withdrawal()
--- RETURNS TRIGGER AS $$
--- DECLARE
---     current_balance DECIMAL(12,2);
---     new_balance DECIMAL(12,2);
--- BEGIN
---     -- Only check for withdrawals and transfer_out types, TODO: rely on enum not string comparison
---     IF NEW.transaction_type = 'WITHDRAWAL' OR NEW.transaction_type = 'TRANSFER_OUT' THEN
---         SELECT balance INTO current_balance FROM users WHERE user_id = NEW.user_id FOR UPDATE;
-        
---         -- Raise exception to exit if insufficient funds to complete withdrawal
---         IF current_balance < NEW.amount THEN
---             RAISE EXCEPTION 'Insufficient funds: available balance is %', current_balance;
---         END IF;
---     END IF;
-    
---     RETURN NEW;
--- END;
--- $$ LANGUAGE plpgsql;
-
--- -- Trigger to enforce transactional integrity
--- CREATE TRIGGER ensure_transaction_integrity
--- BEFORE INSERT ON transactions
--- FOR EACH ROW
--- EXECUTE FUNCTION validate_withdrawal();
-
+-- Index to optimize calculation of user balance
+CREATE INDEX idx_transactions_balance_calculation ON transactions(user_id, status, transaction_type, amount);
