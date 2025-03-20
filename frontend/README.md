@@ -14,4 +14,4 @@
 
 ## Limitations
 - I've yet to define a contract between frontend and backend request/response objects beyond the openapi.yml documentation. It'd be better if it was type enforced on the frontend via Zod or something.
-- It could be a lot prettier, even for banking standards. I spent a lot of time today cleaning up and refactoring the backend for functionality and stability. 
+- It could be a lot prettier, even for banking standards. I spent a lot of time cleaning up and refactoring the backend for functionality and stability. 
